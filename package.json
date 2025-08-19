@@ -15,10 +15,13 @@
     "functions/*"
   ],
   "devDependencies": {
-    "turbo": "latest",
-    "typescript": "latest",
     "eslint": "latest",
-    "prettier": "latest"
+    "prettier": "latest",
+    "turbo": "latest",
+    "typescript": "latest"
   },
-  "packageManager": "npm@10.8.1"
+  "packageManager": "npm@10.8.1",
+  "dependencies": {
+    "contentstack": "^3.26.2"
+  }
 }
