@@ -24,7 +24,7 @@ export default function AIBlogPage() {
       try {
         const res = await fetch('/api/ai')
         const data = await res.json()
-        setEntry(data[0]) // since Contentstack returns array
+        setEntry(data[0] || null)
       } catch (error) {
         console.error('Error fetching blog:', error)
       } finally {
