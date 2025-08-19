@@ -8,6 +8,9 @@ export async function GET() {
     Query.where('url', '/blog/ai')
 
     const response = await Query.toJSON().find()
+
+    console.log('Contentstack raw response:', response)
+
     const entries = response?.[0] || []
 
     return NextResponse.json(entries)
