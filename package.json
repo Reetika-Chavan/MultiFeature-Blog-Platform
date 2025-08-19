@@ -1,0 +1,23 @@
+{
+  "name": "multifeature-blog-platform",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Multi-language, high-performance blog platform with Next.js and Contentstack Launch",
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "functions/*"
+  ],
+  "devDependencies": {
+    "turbo": "latest",
+    "typescript": "latest",
+    "eslint": "latest",
+    "prettier": "latest"
+  }
+}
