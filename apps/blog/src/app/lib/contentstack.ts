@@ -38,6 +38,19 @@ export async function getAIBlogPost() {
   }
 }
 
+export async function getLatestBlogPost() {
+  try {
+    const Query = Stack.ContentType("blogpost").Query();
+    Query.where("url", "/blog/latest");
+
+    const response = await Query.toJSON().find();
+    return response?.[0]?.[0] || null;
+  } catch (error) {
+    console.error("Contentstack latestblog fetch error:", error);
+    return null;
+  }
+}
+
 export async function getAllBlogPosts() {
   try {
     const Query = Stack.ContentType("blogpost").Query();
