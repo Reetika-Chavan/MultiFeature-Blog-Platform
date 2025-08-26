@@ -36,7 +36,7 @@ export default async function LatestBlogPage() {
       )}
 
       <div className="mt-6">
-        <h1 className="text-4xl font-bold text-gray-900">{entry.title}</h1>
+        <h1 className="text-4xl font-bold text-white-900">{entry.title}</h1>
         <p className="mt-2 text-sm text-gray-500">
           Category: <span className="font-medium">{entry.category}</span>
         </p>
