@@ -1,4 +1,5 @@
 import { getAIBlogPost } from "@/app/lib/contentstack";
+import { detectLocale } from "@/app/lib/detectLocale";
 
 interface BlogEntry {
   title: string;
@@ -13,8 +14,18 @@ interface BlogEntry {
   reference?: { uid: string; _content_type_uid: string }[];
 }
 
-export default async function AIBlogPage() {
-  const entry: BlogEntry | null = await getAIBlogPost();
+interface Props {
+  searchParams: { lang?: string };
+}
+
+export default async function AIBlogPage({ searchParams }: Props) {
+  const locale = searchParams.lang || (await detectLocale());
+
+  let entry: BlogEntry | null = await getAIBlogPost(locale);
+
+  if (!entry && locale !== "en-us") {
+    entry = await getAIBlogPost("en-us");
+  }
 
   if (!entry) {
     return (
@@ -25,40 +36,42 @@ export default async function AIBlogPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
-      {/* img */}
-      {entry.banner_image?.url && (
-        <img
-          src={entry.banner_image.url}
-          alt={entry.banner_image.title || "Banner"}
-          className="w-full h-72 object-cover rounded-2xl shadow-md"
-        />
-      )}
-
-      <div className="mt-6">
-        <h1 className="text-4xl font-bold text-white-900">{entry.title}</h1>
-        <p className="mt-2 text-sm text-gray-500">
-          Category: <span className="font-medium">{entry.category}</span>
-        </p>
-        {entry.tags && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {entry.tags.map((tag, idx) => (
-              <span
-                key={idx}
-                className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        {/* Banner Image */}
+        {entry.banner_image?.url && (
+          <img
+            src={entry.banner_image.url}
+            alt={entry.banner_image.title || "Banner"}
+            className="w-full h-72 object-cover rounded-2xl shadow-lg"
+          />
         )}
-      </div>
 
-      {/* Content */}
-      <div
-        className="prose prose-lg mt-6 max-w-none"
-        dangerouslySetInnerHTML={{ __html: entry.content }}
-      />
+        <div className="mt-6">
+          <h1 className="text-4xl font-bold">{entry.title}</h1>
+          <p className="mt-2 text-sm text-gray-300">
+            Category: <span className="font-medium">{entry.category}</span>
+          </p>
+          {entry.tags && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {entry.tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="bg-gray-700 text-gray-200 text-xs px-3 py-1 rounded-full"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div
+          className="prose prose-lg prose-invert mt-6 max-w-none"
+          dangerouslySetInnerHTML={{ __html: entry.content }}
+        />
+      </div>
     </div>
   );
 }

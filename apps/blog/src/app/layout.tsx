@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import LanguageSwitcher from "@/app/components/LanguageSwitcher"; 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +28,17 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <header
+          style={{
+            padding: "12px 16px",
+            borderBottom: "1px solid #e0e0e0",
+            display: "flex",
+            justifyContent: "flex-end",
+            backgroundColor: "#f9f9f9",
+          }}
+        >
+          <LanguageSwitcher />
+        </header>
         {children}
       </body>
     </html>

@@ -25,11 +25,10 @@ ContentstackLivePreview.init({
   },
 });
 
-export async function getAIBlogPost() {
+export async function getAIBlogPost(locale = "en-us") {
   try {
     const Query = Stack.ContentType("blogpost").Query();
-    Query.where("url", "/blog/ai");
-
+    Query.where("url", "/blog/ai").language(locale); 
     const response = await Query.toJSON().find();
     return response?.[0]?.[0] || null;
   } catch (error) {
@@ -38,22 +37,22 @@ export async function getAIBlogPost() {
   }
 }
 
-export async function getLatestBlogPost() {
+export async function getLatestBlogPost(locale = "en-us") {
   try {
     const Query = Stack.ContentType("blogpost").Query();
-    Query.where("url", "/blog/latest");
-
+    Query.where("url", "/blog/latest").language(locale); 
     const response = await Query.toJSON().find();
     return response?.[0]?.[0] || null;
   } catch (error) {
-    console.error("Contentstack latestblog fetch error:", error);
+    console.error("Contentstack latest blog fetch error:", error);
     return null;
   }
 }
 
-export async function getAllBlogPosts() {
+export async function getAllBlogPosts(locale = "en-us") {
   try {
     const Query = Stack.ContentType("blogpost").Query();
+    Query.language(locale); 
     const response = await Query.toJSON().find();
     return response?.[0] || [];
   } catch (error) {
