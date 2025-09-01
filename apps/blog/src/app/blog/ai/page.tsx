@@ -1,5 +1,7 @@
 import { getAIBlogPost } from "@/app/lib/contentstack";
 import { detectLocale } from "@/app/lib/detectLocale";
+import LanguageSwitcher from "@/app/components/LanguageSwitcher";
+import Image from "next/image";
 
 interface BlogEntry {
   title: string;
@@ -11,7 +13,6 @@ interface BlogEntry {
     url: string;
     title?: string;
   };
-  reference?: { uid: string; _content_type_uid: string }[];
 }
 
 export default async function AIBlogPage({
@@ -19,10 +20,9 @@ export default async function AIBlogPage({
 }: {
   searchParams: Promise<{ lang?: string }>;
 }) {
-  const { lang } = await searchParams; // ✅ Await the Promise
+  const { lang } = await searchParams;
 
   const locale = lang || (await detectLocale());
-
   let entry: BlogEntry | null = await getAIBlogPost(locale);
 
   if (!entry && locale !== "en-us") {
@@ -30,20 +30,23 @@ export default async function AIBlogPage({
   }
 
   if (!entry) {
-    return (
-      <p className="text-center py-10 text-red-500">
-        Failed to load AI blog post.
-      </p>
-    );
+    return <p className="text-center py-10 text-red-500">Failed to load AI blog post.</p>;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <div className="max-w-4xl mx-auto px-6 py-10">
+        {/* Language Switcher */}
+        <div className="mb-4">
+          <LanguageSwitcher />
+        </div>
+
         {entry.banner_image?.url && (
-          <img
+          <Image
             src={entry.banner_image.url}
             alt={entry.banner_image.title || "Banner"}
+            width={1200}
+            height={500}
             className="w-full h-72 object-cover rounded-2xl shadow-lg"
           />
         )}

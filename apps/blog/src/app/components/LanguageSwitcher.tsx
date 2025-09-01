@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const languages = [
   { code: "en-us", label: "English" },
@@ -10,22 +11,28 @@ const languages = [
 
 export default function LanguageSwitcher() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const currentLang = searchParams.get("lang") || "en-us";
+  const [currentLang, setCurrentLang] = useState("en-us");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const lang = params.get("lang") || "en-us";
+    setCurrentLang(lang);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLang = e.target.value;
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(window.location.search);
     params.set("lang", newLang);
 
     router.push(`?${params.toString()}`);
+    setCurrentLang(newLang);
   };
 
   return (
     <select
       value={currentLang}
       onChange={handleChange}
-      className="p-2 rounded border border-black"
+      className="p-2 rounded border border-gray-700 bg-gray-800 text-white"
     >
       {languages.map((lang) => (
         <option key={lang.code} value={lang.code}>
