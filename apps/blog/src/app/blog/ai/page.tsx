@@ -14,12 +14,14 @@ interface BlogEntry {
   reference?: { uid: string; _content_type_uid: string }[];
 }
 
-interface Props {
-  searchParams: { lang?: string };
-}
+export default async function AIBlogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>;
+}) {
+  const { lang } = await searchParams; // ✅ Await the Promise
 
-export default async function AIBlogPage({ searchParams }: Props) {
-  const locale = searchParams.lang || (await detectLocale());
+  const locale = lang || (await detectLocale());
 
   let entry: BlogEntry | null = await getAIBlogPost(locale);
 
@@ -38,7 +40,6 @@ export default async function AIBlogPage({ searchParams }: Props) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <div className="max-w-4xl mx-auto px-6 py-10">
-        {/* Banner Image */}
         {entry.banner_image?.url && (
           <img
             src={entry.banner_image.url}
@@ -66,7 +67,6 @@ export default async function AIBlogPage({ searchParams }: Props) {
           )}
         </div>
 
-        {/* Content */}
         <div
           className="prose prose-lg prose-invert mt-6 max-w-none"
           dangerouslySetInnerHTML={{ __html: entry.content }}
