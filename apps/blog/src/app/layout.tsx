@@ -37,7 +37,6 @@ export default function RootLayout({
             backgroundColor: "#f9f9f9",
           }}
         >
-          <LanguageSwitcher />
         </header>
         {children}
       </body>
