@@ -2,19 +2,19 @@ import { getLatestBlogPost } from "@/app/lib/contentstack";
 import { detectLocale } from "@/app/lib/detectLocale";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
-import { headers } from "next/headers";
 
 export default async function LatestBlogPage() {
   const locale = await detectLocale();
 
-  const h = await headers();
-  const currentPath = h.get("x-invoke-path") || "";
-  const isLatest = currentPath.endsWith("/latest");
-
+  // Always fetch page 1 for /latest
   const entry = await getLatestBlogPost(locale);
 
   if (!entry) {
-    return <p className="text-center py-10 text-red-500">Failed to load latest blog post.</p>;
+    return (
+      <p className="text-center py-10 text-red-500">
+        Failed to load latest blog post.
+      </p>
+    );
   }
 
   return (
