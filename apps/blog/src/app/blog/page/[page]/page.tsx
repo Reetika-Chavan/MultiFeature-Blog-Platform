@@ -1,22 +1,25 @@
+// apps/blog/src/app/blog/page/[page]/page.tsx
 import { getLatestBlogPost, getBlogPosts } from "@/app/lib/contentstack";
 import { detectLocale } from "@/app/lib/detectLocale";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
 
-interface PageProps {
-  params: { page: string };
-}
+type PageProps = {
+  params: {
+    page: string;
+  };
+};
 
 export default async function BlogPage({ params }: PageProps) {
   const locale = await detectLocale();
-  const pageNum = parseInt(params.page, 10) || 1;
+  const { page } = params;
 
-  let entry;
+  let entry = null;
 
-  if (pageNum === 1) {
-    entry = await getLatestBlogPost(locale, 1, 1);
+  if (page === "1") {
+    entry = await getLatestBlogPost(locale);
   } else {
-    const posts = await getBlogPosts(locale, pageNum, 1);
+    const posts = await getBlogPosts(locale, parseInt(page, 10), 1);
     entry = posts[0] || null;
   }
 
