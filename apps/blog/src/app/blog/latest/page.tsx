@@ -6,7 +6,6 @@ import Image from "next/image";
 export default async function LatestBlogPage() {
   const locale = await detectLocale();
 
-  // Always fetch page 1 for /latest
   const entry = await getLatestBlogPost(locale);
 
   if (!entry) {
