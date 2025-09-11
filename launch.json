@@ -9,7 +9,7 @@
   "rewrites": [
     {
       "source": "/latest",
-      "destination": "/blog/latest"
+      "destination": "/blog/page/1"
     }
   ]
 }

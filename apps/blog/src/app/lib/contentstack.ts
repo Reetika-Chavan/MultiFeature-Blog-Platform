@@ -37,10 +37,15 @@ export async function getAIBlogPost(locale = "en-us") {
   }
 }
 
-export async function getLatestBlogPost(locale = "en-us") {
+export async function getLatestBlogPost(locale = "en-us", page = 1, limit = 1) {
   try {
     const Query = Stack.ContentType("blogpost").Query();
-    Query.where("url", "/blog/latest").language(locale); 
+
+    Query.where("url", "/blog/latest")
+      .language(locale)
+      .skip((page - 1) * limit)
+      .limit(limit);
+
     const response = await Query.toJSON().find();
     return response?.[0]?.[0] || null;
   } catch (error) {
@@ -49,14 +54,19 @@ export async function getLatestBlogPost(locale = "en-us") {
   }
 }
 
-export async function getAllBlogPosts(locale = "en-us") {
+
+export async function getBlogPosts(locale = "en-us", page = 1, limit = 1) {
   try {
     const Query = Stack.ContentType("blogpost").Query();
-    Query.language(locale); 
+    Query.language(locale)
+      .ascending("created_at")
+      .skip((page - 1) * limit)
+      .limit(limit);
+
     const response = await Query.toJSON().find();
     return response?.[0] || [];
   } catch (error) {
-    console.error("Contentstack fetch all posts error:", error);
+    console.error("Contentstack paginated blog fetch error:", error);
     return [];
   }
 }
