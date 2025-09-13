@@ -4,8 +4,8 @@ export default async function onRequest(context) {
   const requestedFile = url.pathname.replace("/cdn-assets/", "");
 
   const assetMap = {
-    "blog.png": "/blt940544a43af4e6be/68c29d65937d0a38a6a8dbe8/blog.png",
-  };
+  "blog.png": "/blt940544a43af4e6be/blog.png", 
+};
 
   const path = assetMap[requestedFile];
   if (!path) {
