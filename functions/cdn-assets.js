@@ -1,188 +1,54 @@
 // functions/cdn-assets.js
 
-/**
- * Contentstack CDN Assets Proxy Function
- *
- * This function serves as a proxy for Contentstack assets, providing:
- * - Custom /cdn-assets/ path masking
- * - Contentstack Image Delivery API integration
- * - Automatic image optimization
- * - Proper caching headers
- *
- * Usage: /cdn-assets/blog-cover.png?width=800&height=600&format=webp
- */
-
 export default async function handler(request, context) {
   try {
     const url = new URL(request.url);
     const pathParts = url.pathname.split("/cdn-assets/");
 
     if (pathParts.length < 2) {
-      return new Response(
-        "Invalid asset path. Expected format: /cdn-assets/filename.ext",
-        {
-          status: 400,
-          headers: { "Content-Type": "text/plain" },
-        }
-      );
+      return new Response("Invalid asset path", { status: 400 });
     }
 
-    // Extract the requested asset name (e.g., blog.png)
     const assetKey = pathParts[1];
 
-    // Validate asset key
+    // Basic security check
     if (!assetKey || assetKey.includes("..") || assetKey.includes("//")) {
-      return new Response("Invalid asset key", {
-        status: 400,
-        headers: { "Content-Type": "text/plain" },
-      });
+      return new Response("Invalid asset key", { status: 400 });
     }
 
-    // Build the Contentstack permanent asset URL
-    // This is your stack-specific permanent domain from the asset URL you provided
+    // Your Contentstack base URL
     const contentstackBase =
       "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/";
     const targetUrl = `${contentstackBase}${assetKey}`;
 
-    // Create the fetch URL with Contentstack Image API parameters
+    // Build fetch URL with query parameters
     const fetchUrl = new URL(targetUrl);
 
-    // Apply Contentstack Image Delivery API optimizations
-    const imageParams = new URLSearchParams();
-
-    // Copy optimization parameters from the request
+    // Copy query parameters from request
     url.searchParams.forEach((value, key) => {
-      // Validate and sanitize parameters
-      if (isValidImageParam(key, value)) {
-        imageParams.set(key, value);
-      }
-    });
-
-    // Set default optimizations if no parameters provided
-    if (imageParams.size === 0) {
-      imageParams.set("auto", "webp"); // Auto-convert to WebP for better compression
-      imageParams.set("quality", "85"); // Good quality with compression
-    }
-
-    // Apply parameters to fetch URL
-    imageParams.forEach((value, key) => {
       fetchUrl.searchParams.set(key, value);
     });
 
-    console.log(`Fetching optimized asset: ${fetchUrl.toString()}`);
-
-    // Fetch the asset from Contentstack with optimizations
-    const response = await fetch(fetchUrl.toString(), {
-      headers: {
-        "User-Agent": "Contentstack-CDN-Proxy/1.0",
-      },
-    });
-
-    if (!response.ok) {
-      console.error(
-        `Failed to fetch asset: ${response.status} ${response.statusText}`
-      );
-      return new Response(`Asset not found or error: ${response.status}`, {
-        status: response.status,
-        headers: { "Content-Type": "text/plain" },
-      });
+    // Add default optimization if no params
+    if (url.searchParams.size === 0) {
+      fetchUrl.searchParams.set("auto", "webp");
+      fetchUrl.searchParams.set("quality", "85");
     }
 
-    // Get content type from response or infer from file extension
-    const contentType =
-      response.headers.get("Content-Type") ||
-      getContentTypeFromExtension(assetKey);
+    const response = await fetch(fetchUrl.toString());
 
-    // Return the proxied response with optimized caching headers
+    if (!response.ok) {
+      return new Response("Asset not found", { status: response.status });
+    }
+
     return new Response(response.body, {
       status: response.status,
       headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000, immutable", // 1 year cache
-        Vary: "Accept", // Vary on Accept header for format negotiation
-        "X-Contentstack-CDN": "true", // Custom header to identify proxied content
-        "X-Original-URL": targetUrl, // For debugging
+        "Content-Type": response.headers.get("Content-Type") || "image/png",
+        "Cache-Control": "public, max-age=31536000",
       },
     });
   } catch (error) {
-    console.error("CDN Assets Proxy Error:", error);
-    return new Response(`Internal Server Error: ${error.message}`, {
-      status: 500,
-      headers: { "Content-Type": "text/plain" },
-    });
+    return new Response("Error", { status: 500 });
   }
-}
-
-/**
- * Validate Contentstack Image API parameters
- */
-function isValidImageParam(key, value) {
-  const validParams = [
-    "width",
-    "height",
-    "quality",
-    "format",
-    "auto",
-    "crop",
-    "fit",
-    "dpr",
-    "blur",
-    "brightness",
-    "contrast",
-    "saturation",
-    "hue",
-    "gamma",
-    "sharpen",
-    "unsharp_mask",
-    "strip",
-    "progressive",
-  ];
-
-  if (!validParams.includes(key)) {
-    return false;
-  }
-
-  // Basic validation for numeric parameters
-  if (
-    [
-      "width",
-      "height",
-      "quality",
-      "dpr",
-      "brightness",
-      "contrast",
-      "saturation",
-      "hue",
-      "gamma",
-    ].includes(key)
-  ) {
-    const num = parseFloat(value);
-    return !isNaN(num) && num > 0;
-  }
-
-  return true;
-}
-
-/**
- * Get content type from file extension
- */
-function getContentTypeFromExtension(filename) {
-  const ext = filename.toLowerCase().split(".").pop();
-  const mimeTypes = {
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    png: "image/png",
-    gif: "image/gif",
-    webp: "image/webp",
-    svg: "image/svg+xml",
-    pdf: "application/pdf",
-    mp4: "video/mp4",
-    mp3: "audio/mpeg",
-    css: "text/css",
-    js: "application/javascript",
-    json: "application/json",
-    txt: "text/plain",
-  };
-
-  return mimeTypes[ext] || "application/octet-stream";
 }
