@@ -1,48 +1,41 @@
-// functions/cdn-assets.js
-
 /**
- * Contentstack CDN Assets Proxy Function
+ * CDN Assets API Route
  *
- * This function serves as a proxy for Contentstack assets, providing:
- * - Custom /cdn-assets/ path masking
- * - Contentstack Image Delivery API integration
- * - Automatic image optimization
- * - Proper caching headers
- *
- * Usage: /cdn-assets/blog-cover.png?width=800&height=600&format=webp
+ * This API route handles requests to /cdn-assets/ and proxies them to Contentstack
+ * with image optimization using the Contentstack Image Delivery API.
  */
 
-export default async function handler(request, context) {
-  try {
-    const url = new URL(request.url);
-    const pathParts = url.pathname.split("/cdn-assets/");
+import { NextRequest, NextResponse } from "next/server";
 
-    if (pathParts.length < 2) {
-      return new Response(
-        "Invalid asset path. Expected format: /cdn-assets/filename.ext",
-        {
-          status: 400,
-          headers: { "Content-Type": "text/plain" },
-        }
-      );
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { path: string[] } }
+) {
+  try {
+    const { path } = params;
+
+    if (!path || path.length === 0) {
+      return new NextResponse("Invalid asset path", {
+        status: 400,
+        headers: { "Content-Type": "text/plain" },
+      });
     }
 
-    // Extract the requested asset name (e.g., blog.png)
-    const assetKey = pathParts[1];
+    // Join the path segments to get the full asset path
+    const assetPath = path.join("/");
 
-    // Validate asset key
-    if (!assetKey || assetKey.includes("..") || assetKey.includes("//")) {
-      return new Response("Invalid asset key", {
+    // Validate asset path for security
+    if (!isValidAssetPath(assetPath)) {
+      return new NextResponse("Invalid asset path", {
         status: 400,
         headers: { "Content-Type": "text/plain" },
       });
     }
 
     // Build the Contentstack permanent asset URL
-    // This is your stack-specific permanent domain from the asset URL you provided
     const contentstackBase =
       "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/";
-    const targetUrl = `${contentstackBase}${assetKey}`;
+    const targetUrl = `${contentstackBase}${assetPath}`;
 
     // Create the fetch URL with Contentstack Image API parameters
     const fetchUrl = new URL(targetUrl);
@@ -51,7 +44,7 @@ export default async function handler(request, context) {
     const imageParams = new URLSearchParams();
 
     // Copy optimization parameters from the request
-    url.searchParams.forEach((value, key) => {
+    request.nextUrl.searchParams.forEach((value, key) => {
       // Validate and sanitize parameters
       if (isValidImageParam(key, value)) {
         imageParams.set(key, value);
@@ -82,7 +75,7 @@ export default async function handler(request, context) {
       console.error(
         `Failed to fetch asset: ${response.status} ${response.statusText}`
       );
-      return new Response(`Asset not found or error: ${response.status}`, {
+      return new NextResponse(`Asset not found or error: ${response.status}`, {
         status: response.status,
         headers: { "Content-Type": "text/plain" },
       });
@@ -91,10 +84,13 @@ export default async function handler(request, context) {
     // Get content type from response or infer from file extension
     const contentType =
       response.headers.get("Content-Type") ||
-      getContentTypeFromExtension(assetKey);
+      getContentTypeFromExtension(assetPath);
+
+    // Get the response body
+    const responseBody = await response.arrayBuffer();
 
     // Return the proxied response with optimized caching headers
-    return new Response(response.body, {
+    return new NextResponse(responseBody, {
       status: response.status,
       headers: {
         "Content-Type": contentType,
@@ -102,21 +98,25 @@ export default async function handler(request, context) {
         Vary: "Accept", // Vary on Accept header for format negotiation
         "X-Contentstack-CDN": "true", // Custom header to identify proxied content
         "X-Original-URL": targetUrl, // For debugging
+        "Content-Length": responseBody.byteLength.toString(),
       },
     });
   } catch (error) {
-    console.error("CDN Assets Proxy Error:", error);
-    return new Response(`Internal Server Error: ${error.message}`, {
-      status: 500,
-      headers: { "Content-Type": "text/plain" },
-    });
+    console.error("CDN Assets API Error:", error);
+    return new NextResponse(
+      `Internal Server Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      {
+        status: 500,
+        headers: { "Content-Type": "text/plain" },
+      }
+    );
   }
 }
 
 /**
  * Validate Contentstack Image API parameters
  */
-function isValidImageParam(key, value) {
+function isValidImageParam(key: string, value: string): boolean {
   const validParams = [
     "width",
     "height",
@@ -166,9 +166,9 @@ function isValidImageParam(key, value) {
 /**
  * Get content type from file extension
  */
-function getContentTypeFromExtension(filename) {
+function getContentTypeFromExtension(filename: string): string {
   const ext = filename.toLowerCase().split(".").pop();
-  const mimeTypes = {
+  const mimeTypes: Record<string, string> = {
     jpg: "image/jpeg",
     jpeg: "image/jpeg",
     png: "image/png",
@@ -184,5 +184,37 @@ function getContentTypeFromExtension(filename) {
     txt: "text/plain",
   };
 
-  return mimeTypes[ext] || "application/octet-stream";
+  return mimeTypes[ext || ""] || "application/octet-stream";
+}
+
+/**
+ * Validate asset path for security
+ */
+function isValidAssetPath(assetPath: string): boolean {
+  if (!assetPath || typeof assetPath !== "string") {
+    return false;
+  }
+
+  // Check for path traversal attempts
+  if (assetPath.includes("..") || assetPath.includes("//")) {
+    return false;
+  }
+
+  // Check for valid file extension
+  const validExtensions = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".webp",
+    ".svg",
+    ".pdf",
+    ".mp4",
+    ".mp3",
+  ];
+  const hasValidExtension = validExtensions.some((ext) =>
+    assetPath.toLowerCase().endsWith(ext)
+  );
+
+  return hasValidExtension;
 }
