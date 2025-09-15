@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    const { path } = params;
+    const { path } = await params;
 
     if (!path || path.length === 0) {
       return new NextResponse("Invalid asset path", { status: 400 });
