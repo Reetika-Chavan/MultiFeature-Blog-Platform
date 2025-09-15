@@ -1,54 +1,32 @@
-// functions/cdn-assets.js
-
-export default async function handler(request, context) {
+export default async function handler(req, res) {
   try {
-    const url = new URL(request.url);
-    const pathParts = url.pathname.split("/cdn-assets/");
+    const { path } = req.query; 
 
-    if (pathParts.length < 2) {
-      return new Response("Invalid asset path", { status: 400 });
-    }
+    const assetBaseUrl = `https://${process.env.ASSET_BASE_HOST}/v3/assets/bltb27c897eae5ed3fb`;
 
-    const assetKey = pathParts[1];
+    const assetMap = {
+      "blog.png": "blt940544a43af4e6be/blog.png",
+    };
 
-    // Basic security check
-    if (!assetKey || assetKey.includes("..") || assetKey.includes("//")) {
-      return new Response("Invalid asset key", { status: 400 });
-    }
+    const mappedPath = assetMap[path] || path;
 
-    // Your Contentstack base URL
-    const contentstackBase =
-      "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/";
-    const targetUrl = `${contentstackBase}${assetKey}`;
+    const url = `${assetBaseUrl}/${mappedPath}`;
 
-    // Build fetch URL with query parameters
-    const fetchUrl = new URL(targetUrl);
+    const searchParams = new URLSearchParams(req.query);
+    const finalUrl = `${url}?${searchParams.toString()}`;
 
-    // Copy query parameters from request
-    url.searchParams.forEach((value, key) => {
-      fetchUrl.searchParams.set(key, value);
-    });
-
-    // Add default optimization if no params
-    if (url.searchParams.size === 0) {
-      fetchUrl.searchParams.set("auto", "webp");
-      fetchUrl.searchParams.set("quality", "85");
-    }
-
-    const response = await fetch(fetchUrl.toString());
+    const response = await fetch(finalUrl);
 
     if (!response.ok) {
-      return new Response("Asset not found", { status: response.status });
+      res.status(response.status).send("Error fetching asset");
+      return;
     }
 
-    return new Response(response.body, {
-      status: response.status,
-      headers: {
-        "Content-Type": response.headers.get("Content-Type") || "image/png",
-        "Cache-Control": "public, max-age=31536000",
-      },
-    });
+    const buffer = await response.arrayBuffer();
+    res.setHeader("Content-Type", response.headers.get("content-type"));
+    res.send(Buffer.from(buffer));
   } catch (error) {
-    return new Response("Error", { status: 500 });
+    console.error(error);
+    res.status(500).send("Internal Server Error");
   }
 }

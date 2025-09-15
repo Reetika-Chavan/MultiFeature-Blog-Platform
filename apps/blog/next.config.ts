@@ -9,15 +9,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-
-  async rewrites() {
-    return [
-      {
-        source: "/cdn-assets/:path*",
-        destination: "/api/cdn-assets/:path*",
-      },
-    ];
-  },
 };
 
 export default nextConfig;

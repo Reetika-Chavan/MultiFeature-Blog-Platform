@@ -1,0 +1,8 @@
+{
+  "routes": [
+    {
+      "source": "/cdn-assets/:path*",
+      "function": "cdn-assets"
+    }
+  ]
+}
