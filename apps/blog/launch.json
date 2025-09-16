@@ -1,15 +1,8 @@
 {
-  "functions": {
-    "ip-restrict": {
-      "path": "/ip-restrict",
-      "runtime": "nodejs",
-      "source": "./functions/ip-restrict.js"
+  "edgeFunctions": {
+    "ipRestrict": {
+      "path": "/author-tools/:path*",
+      "source": "./functions/ip-restrict.edge.js"
     }
-  },
-  "routes": [
-    {
-      "source": "/author-tools/:path*",
-      "function": "ip-restrict"
-    }
-  ]
+  }
 }
