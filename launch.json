@@ -1,8 +1,8 @@
 {
-  "edgeFunctions": {
-    "ipRestrict": {
-      "path": "/author-tools/:path*",
-      "source": "./functions/ip-restrict.edge.js"
+  "edge_functions": [
+    {
+      "path": "/author-tools/*",
+      "function": "ip-restrict"
     }
-  }
+  ]
 }
