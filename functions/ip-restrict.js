@@ -1,4 +1,4 @@
-exports.handler = async function (req, res) {
+module.exports = async function handler(req, res) {
   // Allowed IPs
   const allowedIPs = ["27.107.90.206"];
 

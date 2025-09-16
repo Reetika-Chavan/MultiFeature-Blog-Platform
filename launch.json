@@ -1,0 +1,8 @@
+{
+  "routes": [
+    {
+      "source": "/author-tools/:path*",
+      "function": "ip-restrict"
+    }
+  ]
+}
