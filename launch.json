@@ -1,8 +1,0 @@
-{
-  "functions": [
-    {
-      "path": "/author-tools/*",
-      "handler": "functions/ip-restrict.js"
-    }
-  ]
-}
