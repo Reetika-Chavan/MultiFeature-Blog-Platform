@@ -2,7 +2,7 @@
   "functions": [
     {
       "path": "/author-tools/*",
-      "handler": "ip-restrict.js"
+      "handler": "functions/ip-restrict.js"
     }
   ]
 }

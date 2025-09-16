@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Allowed IPs
   const allowedIPs = ["27.107.90.206"];
 
@@ -13,4 +13,4 @@ export default async function handler(req, res) {
 
   // Continue to the Next.js route
   return res.next();
-}
+};
