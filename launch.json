@@ -1,8 +1,8 @@
 {
-  "routes": [
+  "functions": [
     {
-      "source": "/cdn-assets/*",
-      "function": "cdn-assets"
+      "path": "/author-tools/*",
+      "handler": "ip-restrict.js"
     }
   ]
 }
