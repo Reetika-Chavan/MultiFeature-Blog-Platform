@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "ip-restrict": {
+      "path": "/ip-restrict",
+      "runtime": "nodejs",
+      "source": "./functions/ip-restrict.js"
+    }
+  },
+  "routes": [
+    {
+      "source": "/author-tools/:path*",
+      "function": "ip-restrict"
+    }
+  ]
+}

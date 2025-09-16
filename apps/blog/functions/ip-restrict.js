@@ -1,16 +1,17 @@
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // Allowed IPs
   const allowedIPs = ["27.107.90.206"];
 
-  // Get client IP (Launch provides it in headers)
+  // Get client IP (Launch adds x-forwarded-for)
   const clientIP =
     req.headers["x-forwarded-for"]?.split(",")[0].trim() ||
     req.connection?.remoteAddress;
 
   if (!allowedIPs.includes(clientIP)) {
-    return res.status(403).send("Access denied: IP not allowed");
+    res.statusCode = 403;
+    return res.end("Access denied: IP not allowed");
   }
 
-  // Continue to the Next.js route
+  // Allow request to continue to Next.js route
   return res.next();
-};
+}
