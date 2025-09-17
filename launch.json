@@ -1,8 +1,0 @@
-{
-  "edge_functions": [
-    {
-      "path": "/author-tools/*",
-      "function": "ip-restrict"
-    }
-  ]
-}
