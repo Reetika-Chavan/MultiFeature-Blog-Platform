@@ -1,0 +1,21 @@
+{
+  "redirects": [
+    {
+      "source": "/blog/ai",
+      "destination": "/blog/neuralink",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/latest",
+      "destination": "/blog?page=1",
+      "has": [
+        {
+          "type": "host",
+          "value": "(?!.*(?:blog-test|preview-blog)\\.devcontentstackapps\\.com$).*"
+        }
+      ]
+    }
+  ]
+}
