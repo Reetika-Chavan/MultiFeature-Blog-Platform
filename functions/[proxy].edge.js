@@ -1,6 +1,6 @@
-import { processRedirects } from '../apps/blog/src/app/lib/redirects.js';
-import { processRewrites } from '../apps/blog/src/app/lib/rewrites.js';
-import { redirectsConfig } from '../apps/blog/src/app/lib/config.js';
+import { processRedirects } from "../apps/blog/src/app/lib/redirects.js";
+import { processRewrites } from "../apps/blog/src/app/lib/rewrites.js";
+import { redirectsConfig } from "../apps/blog/src/app/lib/config.js";
 
 export default async function handler(request) {
   const url = new URL(request.url);
@@ -41,11 +41,14 @@ export default async function handler(request) {
   }
 
   // 🔀 Redirects
-  const redirectResponse = processRedirects(redirectsConfig, request);
+  const redirectResponse = processRedirects(redirectsConfig.redirects, request);
   if (redirectResponse) return redirectResponse;
 
   // 🔀 Rewrites
-  const rewriteResponse = await processRewrites(redirectsConfig, request);
+  const rewriteResponse = await processRewrites(
+    redirectsConfig.rewrites,
+    request
+  );
   if (rewriteResponse) return rewriteResponse;
 
   // Default
