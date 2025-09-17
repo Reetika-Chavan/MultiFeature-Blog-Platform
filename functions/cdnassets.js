@@ -1,8 +1,9 @@
 export default async function handler(req, res) {
   const { method, url } = req;
-  const pathname = new URL(url, `http://${req.headers.host}`).pathname;
+  const { host } = req.headers;
+  const pathname = new URL(url, `http://${host}`).pathname;
 
-  // Handle CORS
+  // Handle CORS preflight
   if (method === "OPTIONS") {
     res.writeHead(200, {
       "Access-Control-Allow-Origin": "*",
@@ -12,24 +13,24 @@ export default async function handler(req, res) {
     return res.end();
   }
 
-  // Only handle /cdn-assets/ requests
-  if (!pathname.startsWith("/cdn-assets/") || !["GET", "HEAD"].includes(method)) {
+  // Only handle /cdnassets/ requests
+  if (!pathname.startsWith("/cdnassets/") || !["GET", "HEAD"].includes(method)) {
     res.writeHead(404);
     return res.end("Not Found");
   }
 
   try {
-    const assetPath = pathname.replace("/cdn-assets/", "");
+    // Extract asset path (e.g. blog-cover.png)
+    const assetPath = pathname.replace("/cdnassets/", "");
     if (!assetPath) {
       res.writeHead(400);
       return res.end("Asset path required");
     }
 
-    // Map asset names to Contentstack URLs
+    // Map cdnassets file → Contentstack URL
     const assetMapping = {
-      "blog-cover.png":
-        "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
-      // Add more assets here
+      "blog.png": "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
+      // Add more mappings here
     };
 
     const originalUrl = assetMapping[assetPath];
@@ -38,9 +39,9 @@ export default async function handler(req, res) {
       return res.end("Asset not found");
     }
 
-    // Build Contentstack Image API URL with optimization parameters
+    // Build Contentstack Image API URL with optimization params
+    const searchParams = new URL(url, `http://${host}`).searchParams;
     let finalUrl = originalUrl;
-    const searchParams = new URL(url, `http://${req.headers.host}`).searchParams;
     if ([...searchParams].length) {
       const params = new URLSearchParams();
       searchParams.forEach((value, key) => params.append(key, value));
