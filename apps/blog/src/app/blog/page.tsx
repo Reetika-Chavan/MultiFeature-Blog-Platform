@@ -19,16 +19,17 @@ interface BlogEntry {
 }
 
 interface BlogPageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
-  };
+  }>;
 }
 
 const POSTS_PER_PAGE = 5;
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
   const locale = await detectLocale();
-  const currentPage = parseInt(searchParams.page || "1", 10);
+  const resolvedSearchParams = await searchParams;
+  const currentPage = parseInt(resolvedSearchParams.page || "1", 10);
   const allPosts: BlogEntry[] = await getAllBlogPosts(locale);
 
   // Calculate pagination
