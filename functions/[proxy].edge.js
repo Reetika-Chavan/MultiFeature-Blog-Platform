@@ -1,11 +1,12 @@
-import { processRedirects } from '../apps/blog/lib/redirects.js';
-import { processRewrites } from '../apps/blog/lib/rewrites.js';
-import { redirectsConfig } from '../apps/blog/lib/config.js';
+import { processRedirects } from '../apps/blog/src/app/lib/redirects.js';
+import { processRewrites } from '../apps/blog/src/app/lib/rewrites.js';
+import { redirectsConfig } from '../apps/blog/src/app/lib/config.js';
 
-export default async function handler(request, context) {
+export default async function handler(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
+  // 🔒 Restrict access to /author-tools
   if (pathname.startsWith("/author-tools")) {
     const allowedIPs = ["27.107.90.206"];
 
@@ -39,15 +40,14 @@ export default async function handler(request, context) {
     }
   }
 
+  // 🔀 Redirects
   const redirectResponse = processRedirects(redirectsConfig, request);
-  if (redirectResponse) {
-    return redirectResponse;
-  }
+  if (redirectResponse) return redirectResponse;
 
+  // 🔀 Rewrites
   const rewriteResponse = await processRewrites(redirectsConfig, request);
-  if (rewriteResponse) {
-    return rewriteResponse;
-  }
+  if (rewriteResponse) return rewriteResponse;
 
+  // Default
   return fetch(request);
 }
