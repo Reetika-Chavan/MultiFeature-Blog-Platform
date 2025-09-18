@@ -11,65 +11,68 @@ export default async function handler(request) {
     const authHeader = request.headers.get("Authorization");
     const timestamp = Date.now();
 
-    // ALWAYS require authentication - ignore cached credentials
-    // Force browser to show auth dialog every time
+    // Use unique realm to prevent credential caching
     const uniqueRealm = `PreviewAuth_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Always return 401 to force fresh authentication
-    return new Response(
-      `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Authentication Required</title>
-        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-        <meta http-equiv="Pragma" content="no-cache">
-        <meta http-equiv="Expires" content="0">
-        <style>
-          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-          .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-          .info { color: #1976d2; background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; }
-          h1 { color: #333; margin-bottom: 20px; }
-          p { margin: 10px 0; line-height: 1.5; }
-          .credentials { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>🔒 Preview Access Required</h1>
-          <div class="info">
-            <p><strong>Domain:</strong> ${hostname}</p>
-            <p>This preview environment requires authentication on every visit.</p>
-            <p>Please enter your credentials to continue.</p>
+    // Check for authentication header
+    if (!authHeader || !authHeader.startsWith("Basic ")) {
+      return new Response(
+        `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Authentication Required</title>
+          <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+          <meta http-equiv="Pragma" content="no-cache">
+          <meta http-equiv="Expires" content="0">
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+            .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .info { color: #1976d2; background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            h1 { color: #333; margin-bottom: 20px; }
+            p { margin: 10px 0; line-height: 1.5; }
+            .credentials { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>🔒 Preview Access Required</h1>
+            <div class="info">
+              <p><strong>Domain:</strong> ${hostname}</p>
+              <p>This preview environment requires authentication on every visit.</p>
+              <p>Please enter your credentials to continue.</p>
+            </div>
+            <div class="credentials">
+              <p><strong>Username:</strong> admin</p>
+              <p><strong>Password:</strong> supra</p>
+            </div>
+            <p><em>Authentication is required every time for security.</em></p>
           </div>
-          <div class="credentials">
-            <p><strong>Username:</strong> admin</p>
-            <p><strong>Password:</strong> supra</p>
-          </div>
-          <p><em>Authentication is required every time for security.</em></p>
-        </div>
-      </body>
-      </html>
-    `,
-      {
-        status: 401,
-        headers: {
-          "WWW-Authenticate": `Basic realm="${uniqueRealm}"`,
-          "Content-Type": "text/html",
-          "Cache-Control":
-            "no-cache, no-store, must-revalidate, private, max-age=0",
-          "CF-Cache-Status": "DYNAMIC",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-      }
-    );
+        </body>
+        </html>
+      `,
+        {
+          status: 401,
+          headers: {
+            "WWW-Authenticate": `Basic realm="${uniqueRealm}"`,
+            "Content-Type": "text/html",
+            "Cache-Control":
+              "no-cache, no-store, must-revalidate, private, max-age=0",
+            "CF-Cache-Status": "DYNAMIC",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }
+      );
+    }
 
+    // Validate credentials
     const base64Credentials = authHeader.split(" ")[1];
     const credentials = atob(base64Credentials);
     const [username, password] = credentials.split(":");
 
     if (username === "admin" && password === "supra") {
+      // Authentication successful - continue with the request
       const modifiedUrl = new URL(request.url);
       modifiedUrl.searchParams.set("_t", timestamp.toString());
       const modifiedRequest = new Request(modifiedUrl.toString(), {
@@ -97,17 +100,54 @@ export default async function handler(request) {
 
       return modifiedResponse;
     } else {
-      return new Response("Unauthorized", {
-        status: 401,
-        headers: {
-          "WWW-Authenticate": `Basic realm="Protected Preview Area ${timestamp}"`,
-          "Content-Type": "text/html",
-          "Cache-Control": "no-cache, no-store, must-revalidate, private",
-          "CF-Cache-Status": "DYNAMIC",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-      });
+      // Invalid credentials - return 401 with unique realm
+      return new Response(
+        `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Invalid Credentials</title>
+          <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+          <meta http-equiv="Pragma" content="no-cache">
+          <meta http-equiv="Expires" content="0">
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+            .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .error { color: #d32f2f; background: #ffebee; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            h1 { color: #333; margin-bottom: 20px; }
+            p { margin: 10px 0; line-height: 1.5; }
+            .credentials { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>❌ Invalid Credentials</h1>
+            <div class="error">
+              <p><strong>Authentication Failed</strong></p>
+              <p>The username or password you entered is incorrect.</p>
+              <p>Please try again with the correct credentials.</p>
+            </div>
+            <div class="credentials">
+              <p><strong>Username:</strong> admin</p>
+              <p><strong>Password:</strong> supra</p>
+            </div>
+            <p><em>Authentication is required every time for security.</em></p>
+          </div>
+        </body>
+        </html>
+      `,
+        {
+          status: 401,
+          headers: {
+            "WWW-Authenticate": `Basic realm="${uniqueRealm}"`,
+            "Content-Type": "text/html",
+            "Cache-Control": "no-cache, no-store, must-revalidate, private",
+            "CF-Cache-Status": "DYNAMIC",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }
+      );
     }
   }
 
