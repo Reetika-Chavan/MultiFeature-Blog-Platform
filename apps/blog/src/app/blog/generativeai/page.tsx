@@ -3,6 +3,7 @@ import { detectLocale } from "@/app/lib/detectLocale";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
 import RevalidateButton from "../../components/RevalidateButton";
+import { headers } from "next/headers";
 
 interface BlogEntry {
   title: string;
@@ -21,28 +22,37 @@ export default async function GenerativeBlogPost({
 }: {
   searchParams: Promise<{ lang?: string }>;
 }) {
+  // Set cache headers for 40-second CDN caching
+  const headersList = await headers();
+  headersList.set(
+    "Cache-Control",
+    "public, max-age=0, s-maxage=40, stale-while-revalidate"
+  );
+
   const { lang } = await searchParams;
-
   const locale = lang || (await detectLocale());
-  let entry: BlogEntry | null = await getGenerativeBlogPost(locale);
 
+  // Fetch blog content
+  let entry: BlogEntry | null = await getGenerativeBlogPost(locale);
   if (!entry && locale !== "en-us") {
     entry = await getGenerativeBlogPost("en-us");
   }
 
   if (!entry) {
     return (
-      <p className="text-center py-10 text-red-500">
-        Failed to load blog post.
-      </p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
+        <p className="text-center py-10 text-red-500 text-xl">
+          Failed to load blog post.
+        </p>
+      </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <div className="max-w-4xl mx-auto px-6 py-10">
-        {/* Language Switcher and Cache Revalidation */}
-        <div className="mb-4 flex justify-between items-center">
+        {/* Header with Language Switcher and Cache Revalidation */}
+        <header className="mb-8 flex justify-between items-center">
           <LanguageSwitcher />
           <div className="flex flex-col items-end gap-2">
             <RevalidateButton />
@@ -50,39 +60,48 @@ export default async function GenerativeBlogPost({
               Page loaded: {new Date().toLocaleTimeString()}
             </p>
           </div>
-        </div>
+        </header>
 
+        {/* Banner Image */}
         {entry.banner_image?.url && (
-          <Image
-            src={entry.banner_image.url}
-            alt={entry.banner_image.title || "Banner"}
-            width={1200}
-            height={500}
-            className="w-full h-72 object-cover rounded-2xl shadow-lg"
-          />
+          <div className="mb-8">
+            <Image
+              src={entry.banner_image.url}
+              alt={entry.banner_image.title || "Banner"}
+              width={1200}
+              height={500}
+              className="w-full h-72 object-cover rounded-2xl shadow-lg"
+              priority
+            />
+          </div>
         )}
 
-        <div className="mt-6">
-          <h1 className="text-4xl font-bold">{entry.title}</h1>
-          <p className="mt-2 text-sm text-gray-300">
-            Category: <span className="font-medium">{entry.category}</span>
-          </p>
-          {entry.tags && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {entry.tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="bg-gray-700 text-gray-200 text-xs px-3 py-1 rounded-full"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Article Header */}
+        <article className="mb-8">
+          <h1 className="text-4xl font-bold mb-4">{entry.title}</h1>
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-gray-300">
+              Category:{" "}
+              <span className="font-medium text-white">{entry.category}</span>
+            </p>
+            {entry.tags && (
+              <div className="flex flex-wrap gap-2">
+                {entry.tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-gray-700 text-gray-200 text-xs px-3 py-1 rounded-full hover:bg-gray-600 transition-colors"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </article>
 
+        {/* Article Content */}
         <div
-          className="prose prose-lg prose-invert mt-6 max-w-none"
+          className="prose prose-lg prose-invert max-w-none"
           dangerouslySetInnerHTML={{ __html: entry.content }}
         />
       </div>
