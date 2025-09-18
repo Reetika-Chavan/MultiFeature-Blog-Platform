@@ -3,12 +3,11 @@
 export default function RevalidateButton() {
   const handleRevalidate = async () => {
     try {
-      // Hit the revalidation URL in the background
       await fetch(
         "https://dev11-app.csnonprod.com/automations-api/run/6783367e138a4c799daff5195c70df1b",
         {
           method: "POST",
-          mode: "no-cors", // This allows the request to go through without CORS issues
+          mode: "no-cors", 
         }
       );
 

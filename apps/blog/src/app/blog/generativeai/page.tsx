@@ -2,7 +2,7 @@ import { getGenerativeBlogPost } from "@/app/lib/contentstack";
 import { detectLocale } from "@/app/lib/detectLocale";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
-import RevalidateButton from "./RevalidateButton";
+import RevalidateButton from "../../components/RevalidateButton";
 
 interface BlogEntry {
   title: string;
