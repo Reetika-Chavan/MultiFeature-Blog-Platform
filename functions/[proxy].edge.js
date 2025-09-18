@@ -11,18 +11,37 @@ export default async function handler(request) {
     const authHeader = request.headers.get("Authorization");
 
     if (!authHeader || !authHeader.startsWith("Basic ")) {
-      // Add timestamp to realm to prevent browser caching
       const timestamp = Date.now();
-      return new Response("Authentication Required", {
-        status: 401,
-        headers: {
-          "WWW-Authenticate": `Basic realm="Protected Preview Area ${timestamp}"`,
-          "Content-Type": "text/html",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-      });
+      return new Response(
+        `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Authentication Required</title>
+          <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+          <meta http-equiv="Pragma" content="no-cache">
+          <meta http-equiv="Expires" content="0">
+        </head>
+        <body>
+          <h1>Authentication Required</h1>
+          <p>Please enter your credentials to access the preview environment.</p>
+          <p>Username: admin, Password: supra</p>
+        </body>
+        </html>
+      `,
+        {
+          status: 401,
+          headers: {
+            "WWW-Authenticate": `Basic realm="Protected Preview Area ${timestamp}"`,
+            "Content-Type": "text/html",
+            "Cache-Control":
+              "no-cache, no-store, must-revalidate, private, max-age=0",
+            "CF-Cache-Status": "DYNAMIC",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }
+      );
     }
 
     const base64Credentials = authHeader.split(" ")[1];
@@ -31,14 +50,14 @@ export default async function handler(request) {
 
     if (username === "admin" && password === "supra") {
     } else {
-      // Add timestamp to realm to prevent browser caching
       const timestamp = Date.now();
       return new Response("Unauthorized", {
         status: 401,
         headers: {
           "WWW-Authenticate": `Basic realm="Protected Preview Area ${timestamp}"`,
           "Content-Type": "text/html",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Cache-Control": "no-cache, no-store, must-revalidate, private",
+          "CF-Cache-Status": "DYNAMIC",
           Pragma: "no-cache",
           Expires: "0",
         },
@@ -90,5 +109,18 @@ export default async function handler(request) {
   );
   if (rewriteResponse) return rewriteResponse;
 
-  return fetch(request);
+  // Debug: Add headers to confirm edge function is running
+  const response = await fetch(request);
+  const modifiedResponse = new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
+
+  // Add debug headers
+  modifiedResponse.headers.set("X-Edge-Function", "running");
+  modifiedResponse.headers.set("X-Hostname", hostname);
+  modifiedResponse.headers.set("X-Timestamp", Date.now().toString());
+
+  return modifiedResponse;
 }
