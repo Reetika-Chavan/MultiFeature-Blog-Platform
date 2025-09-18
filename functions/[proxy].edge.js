@@ -11,47 +11,39 @@ export default async function handler(request) {
     const USERNAME = "admin";
     const PASSWORD = "supra";
 
-    const cookie = request.headers.get("cookie") || "";
-    const valid = cookie.includes(`preview_auth=${USERNAME}:${PASSWORD}`);
-
-    if (valid) {
-      const response = await fetch(request);
-      response.headers.append("Set-Cookie", "preview_auth=; Max-Age=0; Path=/");
-      return response;
-    }
-
-    if (request.method === "POST") {
+    // Handle login POST
+    if (request.method === "POST" && pathname === "/__auth") {
       const form = await request.formData();
       const user = form.get("username");
       const pass = form.get("password");
 
       if (user === USERNAME && pass === PASSWORD) {
-        return fetch(request); // forward request without session persistence
+        return Response.redirect("/", 302);
+      } else {
+        return new Response(`
+          <html>
+            <body>
+              <p>Invalid username or password</p>
+              <form method="POST" action="/__auth">
+                <input type="text" name="username" placeholder="Username" required />
+                <input type="password" name="password" placeholder="Password" required />
+                <button type="submit">Login</button>
+              </form>
+            </body>
+          </html>
+        `, { status: 401, headers: { "Content-Type": "text/html" } });
       }
     }
 
+    // Always show login page if not authenticated
     return new Response(`
-      <!DOCTYPE html>
       <html>
-        <head>
-          <title>Preview Login</title>
-          <style>
-            body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f9f9f9; }
-            .box { background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
-            input { padding: 0.5rem; margin: 0.5rem 0; width: 100%; border: 1px solid #ccc; border-radius: 6px; }
-            button { padding: 0.6rem 1.2rem; border: none; border-radius: 6px; background: #1976d2; color: white; font-weight: bold; cursor: pointer; }
-            button:hover { background: #125a9c; }
-          </style>
-        </head>
         <body>
-          <div class="box">
-            <h2>🔒 Preview Access</h2>
-            <form method="POST">
-              <input type="text" name="username" placeholder="Enter username" required />
-              <input type="password" name="password" placeholder="Enter password" required />
-              <button type="submit">Login</button>
-            </form>
-          </div>
+          <form method="POST" action="/__auth">
+            <input type="text" name="username" placeholder="Username" required />
+            <input type="password" name="password" placeholder="Password" required />
+            <button type="submit">Login</button>
+          </form>
         </body>
       </html>
     `, {
@@ -61,11 +53,11 @@ export default async function handler(request) {
         "Cache-Control": "no-cache, no-store, must-revalidate, private, max-age=0",
         "Pragma": "no-cache",
         "Expires": "0",
-      }
+      },
     });
   }
 
-  // Restrict IP
+  // Restrict IPs for author-tools
   if (pathname.startsWith("/author-tools")) {
     const allowedIPs = ["27.107.90.206"];
     const clientIP =
