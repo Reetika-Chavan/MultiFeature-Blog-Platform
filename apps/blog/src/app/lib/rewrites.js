@@ -30,7 +30,16 @@ export async function processRewrites(rewrites, request) {
       );
     }
 
-    if (url.pathname === rule.source) {
+    // Check if the path matches (including query parameters for /blog)
+    if (
+      rule.source === "/blog" &&
+      url.pathname === "/blog" &&
+      url.search === "?page=1"
+    ) {
+      const rewrittenUrl = `${url.origin}${rule.destination}`;
+      console.log(`Rewriting ${url.pathname}${url.search} to ${rewrittenUrl}`);
+      return fetch(new Request(rewrittenUrl, request));
+    } else if (url.pathname === rule.source) {
       const rewrittenUrl = `${url.origin}${rule.destination}`;
       console.log(`Rewriting ${url.pathname} to ${rewrittenUrl}`);
       return fetch(new Request(rewrittenUrl, request));
