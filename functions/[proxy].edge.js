@@ -16,6 +16,38 @@ export default async function handler(request, env) {
 
   console.log("Client IP:", clientIP);
   console.log("Requested pathname:", pathname);
+  console.log("Hostname:", hostname);
+
+  // Password protection for specific domains
+  if (hostname.includes("preview-blog.devcontentstackapps.com")) {
+    // Check for Basic Authentication
+    const authHeader = request.headers.get("Authorization");
+
+    if (!authHeader || !authHeader.startsWith("Basic ")) {
+      return new Response("Authentication Required", {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": 'Basic realm="Protected Area"',
+          "Content-Type": "text/html",
+        },
+      });
+    }
+
+    // Validate credentials (admin/admin)
+    const base64Credentials = authHeader.split(" ")[1];
+    const credentials = atob(base64Credentials);
+    const [username, password] = credentials.split(":");
+
+    if (username !== "admin" || password !== "supra") {
+      return new Response("Unauthorized", {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": 'Basic realm="Protected Area"',
+          "Content-Type": "text/html",
+        },
+      });
+    }
+  }
 
   // IP restriction only for author-tools
   if (pathname.startsWith("/author-tools")) {
