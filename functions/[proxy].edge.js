@@ -8,152 +8,66 @@ export default async function handler(request) {
   const hostname = url.hostname;
 
   if (hostname.includes("preview-blog.devcontentstackapps.com")) {
-    const authHeader = request.headers.get("Authorization");
-    const timestamp = Date.now();
+    const USERNAME = "admin";
+    const PASSWORD = "supra";
 
-    // Use unique realm to prevent credential caching
-    const uniqueRealm = `PreviewAuth_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
+    const cookie = request.headers.get("cookie") || "";
+    const valid = cookie.includes(`preview_auth=${USERNAME}:${PASSWORD}`);
 
-    // Check for authentication header
-    if (!authHeader || !authHeader.startsWith("Basic ")) {
-      return new Response(
-        `
-        <!DOCTYPE html>
-        <html>
+    if (valid) {
+      const response = await fetch(request);
+      response.headers.append("Set-Cookie", "preview_auth=; Max-Age=0; Path=/");
+      return response;
+    }
+
+    if (request.method === "POST") {
+      const form = await request.formData();
+      const user = form.get("username");
+      const pass = form.get("password");
+
+      if (user === USERNAME && pass === PASSWORD) {
+        return fetch(request); // forward request without session persistence
+      }
+    }
+
+    return new Response(`
+      <!DOCTYPE html>
+      <html>
         <head>
-          <title>Authentication Required</title>
-          <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-          <meta http-equiv="Pragma" content="no-cache">
-          <meta http-equiv="Expires" content="0">
+          <title>Preview Login</title>
           <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-            .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            .info { color: #1976d2; background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            h1 { color: #333; margin-bottom: 20px; }
-            p { margin: 10px 0; line-height: 1.5; }
-            .credentials { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; }
+            body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f9f9f9; }
+            .box { background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
+            input { padding: 0.5rem; margin: 0.5rem 0; width: 100%; border: 1px solid #ccc; border-radius: 6px; }
+            button { padding: 0.6rem 1.2rem; border: none; border-radius: 6px; background: #1976d2; color: white; font-weight: bold; cursor: pointer; }
+            button:hover { background: #125a9c; }
           </style>
         </head>
         <body>
-          <div class="container">
-            <h1>🔒 Preview Access Required</h1>
-            <div class="info">
-              <p><strong>Domain:</strong> ${hostname}</p>
-              <p>This preview environment requires authentication on every visit.</p>
-              <p>Please enter your credentials to continue.</p>
-            </div>
-            <div class="credentials">
-              <p><strong>Username:</strong> admin</p>
-              <p><strong>Password:</strong> supra</p>
-            </div>
-            <p><em>Authentication is required every time for security.</em></p>
+          <div class="box">
+            <h2>🔒 Preview Access</h2>
+            <form method="POST">
+              <input type="text" name="username" placeholder="Enter username" required />
+              <input type="password" name="password" placeholder="Enter password" required />
+              <button type="submit">Login</button>
+            </form>
           </div>
         </body>
-        </html>
-      `,
-        {
-          status: 401,
-          headers: {
-            "WWW-Authenticate": `Basic realm="${uniqueRealm}"`,
-            "Content-Type": "text/html",
-            "Cache-Control":
-              "no-cache, no-store, must-revalidate, private, max-age=0",
-            "CF-Cache-Status": "DYNAMIC",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
-        }
-      );
-    }
-
-    // Validate credentials
-    const base64Credentials = authHeader.split(" ")[1];
-    const credentials = atob(base64Credentials);
-    const [username, password] = credentials.split(":");
-
-    if (username === "admin" && password === "supra") {
-      // Authentication successful - continue with the request
-      const modifiedUrl = new URL(request.url);
-      modifiedUrl.searchParams.set("_t", timestamp.toString());
-      const modifiedRequest = new Request(modifiedUrl.toString(), {
-        method: request.method,
-        headers: request.headers,
-        body: request.body,
-      });
-
-      const response = await fetch(modifiedRequest);
-      const modifiedResponse = new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-      });
-
-      modifiedResponse.headers.set(
-        "Cache-Control",
-        "no-cache, no-store, must-revalidate, private"
-      );
-      modifiedResponse.headers.set("Pragma", "no-cache");
-      modifiedResponse.headers.set("Expires", "0");
-      modifiedResponse.headers.set("X-Edge-Function", "running");
-      modifiedResponse.headers.set("X-Hostname", hostname);
-      modifiedResponse.headers.set("X-Timestamp", timestamp.toString());
-
-      return modifiedResponse;
-    } else {
-      // Invalid credentials - return 401 with unique realm
-      return new Response(
-        `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Invalid Credentials</title>
-          <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-          <meta http-equiv="Pragma" content="no-cache">
-          <meta http-equiv="Expires" content="0">
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-            .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            .error { color: #d32f2f; background: #ffebee; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            h1 { color: #333; margin-bottom: 20px; }
-            p { margin: 10px 0; line-height: 1.5; }
-            .credentials { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>❌ Invalid Credentials</h1>
-            <div class="error">
-              <p><strong>Authentication Failed</strong></p>
-              <p>The username or password you entered is incorrect.</p>
-              <p>Please try again with the correct credentials.</p>
-            </div>
-            <div class="credentials">
-              <p><strong>Username:</strong> admin</p>
-              <p><strong>Password:</strong> supra</p>
-            </div>
-            <p><em>Authentication is required every time for security.</em></p>
-          </div>
-        </body>
-        </html>
-      `,
-        {
-          status: 401,
-          headers: {
-            "WWW-Authenticate": `Basic realm="${uniqueRealm}"`,
-            "Content-Type": "text/html",
-            "Cache-Control": "no-cache, no-store, must-revalidate, private",
-            "CF-Cache-Status": "DYNAMIC",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
-        }
-      );
-    }
+      </html>
+    `, {
+      status: 401,
+      headers: {
+        "Content-Type": "text/html",
+        "Cache-Control": "no-cache, no-store, must-revalidate, private, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
+      }
+    });
   }
 
+  // Restrict IP
   if (pathname.startsWith("/author-tools")) {
     const allowedIPs = ["27.107.90.206"];
-
     const clientIP =
       request.headers.get("x-forwarded-for") ||
       request.headers.get("x-real-ip") ||
@@ -195,6 +109,7 @@ export default async function handler(request) {
   );
   if (rewriteResponse) return rewriteResponse;
 
+  // Default fetch
   const response = await fetch(request);
   const modifiedResponse = new Response(response.body, {
     status: response.status,
