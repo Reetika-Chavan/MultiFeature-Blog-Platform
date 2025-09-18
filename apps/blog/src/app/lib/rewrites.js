@@ -10,13 +10,24 @@ export async function processRewrites(rewrites, request) {
     );
 
     if (rule.onlyOnProd) {
+      console.log(`Checking domain restrictions for: ${url.hostname}`);
+      console.log(
+        `Contains blog-test: ${url.hostname.includes("blog-test.devcontentstackapps.com")}`
+      );
+      console.log(
+        `Contains preview-blog: ${url.hostname.includes("preview-blog.devcontentstackapps.com")}`
+      );
+
       if (
         url.hostname.includes("blog-test.devcontentstackapps.com") ||
         url.hostname.includes("preview-blog.devcontentstackapps.com")
       ) {
         console.log(`Rewrite skipped for test domain: ${url.hostname}`);
-        continue; 
+        continue;
       }
+      console.log(
+        `Domain check passed, rewrite will execute for: ${url.hostname}`
+      );
     }
 
     if (url.pathname === rule.source) {
