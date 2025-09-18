@@ -3,10 +3,8 @@ import { processRewrites } from "../apps/blog/src/app/lib/rewrites.js";
 import { redirectsConfig } from "../apps/blog/src/app/lib/config.js";
 
 // JWT verification function
-async function verifyJWT(token) {
+async function verifyJWT(token, secret) {
   try {
-    // In Contentstack Launch, environment variables are accessed via globalThis
-    const secret = globalThis.OAUTH_CLIENT_SECRET;
     if (!secret) {
       throw new Error("OAUTH_CLIENT_SECRET not configured");
     }
@@ -34,18 +32,26 @@ async function handleOAuthCallback(request) {
   }
 
   try {
+    // Access environment variables
+    const OAUTH_CLIENT_ID = env?.OAUTH_CLIENT_ID || globalThis.OAUTH_CLIENT_ID;
+    const OAUTH_CLIENT_SECRET =
+      env?.OAUTH_CLIENT_SECRET || globalThis.OAUTH_CLIENT_SECRET;
+    const OAUTH_REDIRECT_URI =
+      env?.OAUTH_REDIRECT_URI || globalThis.OAUTH_REDIRECT_URI;
+    const OAUTH_TOKEN_URL = env?.OAUTH_TOKEN_URL || globalThis.OAUTH_TOKEN_URL;
+
     // Exchange code for tokens
-    const tokenResponse = await fetch(globalThis.OAUTH_TOKEN_URL, {
+    const tokenResponse = await fetch(OAUTH_TOKEN_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
         grant_type: "authorization_code",
-        client_id: globalThis.OAUTH_CLIENT_ID,
-        client_secret: globalThis.OAUTH_CLIENT_SECRET,
+        client_id: OAUTH_CLIENT_ID,
+        client_secret: OAUTH_CLIENT_SECRET,
         code: code,
-        redirect_uri: globalThis.OAUTH_REDIRECT_URI,
+        redirect_uri: OAUTH_REDIRECT_URI,
       }),
     });
 
@@ -65,7 +71,7 @@ async function handleOAuthCallback(request) {
     // Create JWT (simplified - in production use proper JWT library)
     const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
     const payload = btoa(JSON.stringify(jwtPayload));
-    const signature = btoa(globalThis.OAUTH_CLIENT_SECRET);
+    const signature = btoa(OAUTH_CLIENT_SECRET);
     const jwt = `${header}.${payload}.${signature}`;
 
     // Set JWT cookie and redirect
@@ -81,19 +87,29 @@ async function handleOAuthCallback(request) {
   }
 }
 
-export default async function handler(request) {
+export default async function handler(request, env) {
   const url = new URL(request.url);
   const pathname = url.pathname;
   const hostname = url.hostname;
 
+  // Access environment variables from env parameter
+  const OAUTH_CLIENT_ID = env?.OAUTH_CLIENT_ID || globalThis.OAUTH_CLIENT_ID;
+  const OAUTH_CLIENT_SECRET =
+    env?.OAUTH_CLIENT_SECRET || globalThis.OAUTH_CLIENT_SECRET;
+  const OAUTH_REDIRECT_URI =
+    env?.OAUTH_REDIRECT_URI || globalThis.OAUTH_REDIRECT_URI;
+  const OAUTH_TOKEN_URL = env?.OAUTH_TOKEN_URL || globalThis.OAUTH_TOKEN_URL;
+  const OAUTH_AUTHORIZE_URL =
+    env?.OAUTH_AUTHORIZE_URL || globalThis.OAUTH_AUTHORIZE_URL;
+
   // Handle OAuth callback
   if (pathname === "/oauth/callback") {
-    return await handleOAuthCallback(request);
+    return await handleOAuthCallback(request, env);
   }
 
   // Handle login page
   if (pathname === "/login") {
-    const authUrl = `${globalThis.OAUTH_AUTHORIZE_URL}?client_id=${globalThis.OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(globalThis.OAUTH_REDIRECT_URI)}&response_type=code&scope=user.profile:read`;
+    const authUrl = `${OAUTH_AUTHORIZE_URL}?client_id=${OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(OAUTH_REDIRECT_URI)}&response_type=code&scope=user.profile:read`;
 
     return new Response(
       `
@@ -138,7 +154,7 @@ export default async function handler(request) {
 
     try {
       // Verify JWT token
-      const jwt = await verifyJWT(jwtCookie);
+      const jwt = await verifyJWT(jwtCookie, OAUTH_CLIENT_SECRET);
 
       if (!jwt || jwt.exp < Date.now() / 1000) {
         // JWT expired or invalid, redirect to login
@@ -164,7 +180,7 @@ export default async function handler(request) {
 
     try {
       // Verify JWT token
-      const jwt = await verifyJWT(jwtCookie);
+      const jwt = await verifyJWT(jwtCookie, OAUTH_CLIENT_SECRET);
 
       if (!jwt || jwt.exp < Date.now() / 1000) {
         // JWT expired or invalid, redirect to login
