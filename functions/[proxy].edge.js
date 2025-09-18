@@ -18,12 +18,23 @@ export default async function handler(request, env) {
   console.log("Requested pathname:", pathname);
   console.log("Hostname:", hostname);
 
+  // Geolocation headers
+  const country = request.headers.get("visitor-ip-country");
+  const region = request.headers.get("visitor-ip-region");
+  const city = request.headers.get("visitor-ip-city");
+
+  console.log("Geolocation:", { country, region, city });
+
   // Password protection for specific domains
+  console.log("Checking hostname for password protection:", hostname);
   if (hostname.includes("preview-blog.devcontentstackapps.com")) {
+    console.log("Preview domain detected - checking authentication");
     // Check for Basic Authentication
     const authHeader = request.headers.get("Authorization");
+    console.log("Auth header present:", !!authHeader);
 
     if (!authHeader || !authHeader.startsWith("Basic ")) {
+      console.log("No valid auth header - returning 401");
       return new Response("Authentication Required", {
         status: 401,
         headers: {
@@ -33,12 +44,14 @@ export default async function handler(request, env) {
       });
     }
 
-    // Validate credentials (admin/admin)
+    // Validate credentials (admin/supra)
     const base64Credentials = authHeader.split(" ")[1];
     const credentials = atob(base64Credentials);
     const [username, password] = credentials.split(":");
+    console.log("Credentials:", { username, password });
 
     if (username !== "admin" || password !== "supra") {
+      console.log("Invalid credentials - returning 401");
       return new Response("Unauthorized", {
         status: 401,
         headers: {
@@ -47,6 +60,9 @@ export default async function handler(request, env) {
         },
       });
     }
+    console.log("Authentication successful");
+  } else {
+    console.log("Not a preview domain - skipping password protection");
   }
 
   // IP restriction only for author-tools
