@@ -1,9 +1,13 @@
 export default function handler(req, res) {
   try {
+    console.log("Asset proxy called with URL:", req.url);
+    console.log("Asset name from params:", req.params.asset);
+
     // Get the asset name from the path parameter
     const assetName = req.params.asset;
 
     if (!assetName) {
+      console.log("No asset name provided");
       return res.status(400).send("Bad Request: Missing asset name");
     }
 
@@ -18,43 +22,20 @@ export default function handler(req, res) {
 
     const baseUrl = assetMap[assetName.split("?")[0]];
     if (!baseUrl) {
+      console.log("Asset not found in map:", assetName);
       return res.status(404).send("Asset not found");
     }
 
-    // Preserve query parameters for Contentstack Image API optimization
-    const url = new URL(req.url, `https://${req.headers.host}`);
-    const query = url.search || "";
-    const finalUrl = `${baseUrl}${query}`;
+    console.log("Found asset URL:", baseUrl);
 
-    console.log("Proxy fetching:", finalUrl);
-
-    // Fetch the asset
-    fetch(finalUrl, {
-      method: "GET",
-      headers: { Accept: "image/*" },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          return res.status(response.status).send("Error fetching asset");
-        }
-
-        // Set appropriate headers
-        res.setHeader(
-          "Content-Type",
-          response.headers.get("content-type") || "application/octet-stream"
-        );
-        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-        res.setHeader("Access-Control-Allow-Origin", "*");
-
-        return response.arrayBuffer();
-      })
-      .then((buffer) => {
-        res.send(Buffer.from(buffer));
-      })
-      .catch((err) => {
-        console.error("Asset Proxy Error:", err);
-        res.status(500).send("Internal Server Error");
-      });
+    // For now, let's just return a simple response to test
+    res.status(200).json({
+      message: "Asset proxy is working",
+      assetName: assetName,
+      baseUrl: baseUrl,
+      url: req.url,
+      timestamp: new Date().toISOString(),
+    });
   } catch (err) {
     console.error("Asset Proxy Error:", err);
     res.status(500).send("Internal Server Error");

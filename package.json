@@ -24,6 +24,7 @@
   "dependencies": {
     "contentstack": "^3.26.2",
     "isomorphic-dompurify": "^2.26.0",
-    "lucide-react": "^0.541.0"
+    "lucide-react": "^0.541.0",
+    "node-fetch": "^3.3.2"
   }
 }
