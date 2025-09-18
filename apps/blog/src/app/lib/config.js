@@ -14,7 +14,7 @@ export const redirectsConfig = {
     },
     {
       source: "/blog",
-      destination: "/latest",
+      destination: "/blog/latest",
       onlyOnProd: true,
     },
   ],
