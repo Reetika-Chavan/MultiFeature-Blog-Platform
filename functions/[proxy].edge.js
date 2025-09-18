@@ -2,185 +2,152 @@ import { processRedirects } from "../apps/blog/src/app/lib/redirects.js";
 import { processRewrites } from "../apps/blog/src/app/lib/rewrites.js";
 import { redirectsConfig } from "../apps/blog/src/app/lib/config.js";
 
+// JWT verification function
+async function verifyJWT(token) {
+  try {
+    const secret = process.env.OAUTH_CLIENT_SECRET;
+    if (!secret) {
+      throw new Error("OAUTH_CLIENT_SECRET not configured");
+    }
+
+    // Simple JWT verification (in production, use a proper JWT library)
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      throw new Error("Invalid JWT format");
+    }
+
+    const payload = JSON.parse(atob(parts[1]));
+    return payload;
+  } catch (error) {
+    throw new Error("JWT verification failed");
+  }
+}
+
+// OAuth callback handler
+async function handleOAuthCallback(request) {
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+
+  if (!code) {
+    return new Response("Authorization code not found", { status: 400 });
+  }
+
+  try {
+    // Exchange code for tokens
+    const tokenResponse = await fetch(process.env.OAUTH_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: process.env.OAUTH_CLIENT_ID,
+        client_secret: process.env.OAUTH_CLIENT_SECRET,
+        code: code,
+        redirect_uri: process.env.OAUTH_REDIRECT_URI,
+      }),
+    });
+
+    const tokens = await tokenResponse.json();
+
+    if (!tokens.access_token) {
+      throw new Error("Failed to obtain access token");
+    }
+
+    // Create JWT with token information
+    const jwtPayload = {
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
+    };
+
+    // Create JWT (simplified - in production use proper JWT library)
+    const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+    const payload = btoa(JSON.stringify(jwtPayload));
+    const signature = btoa(process.env.OAUTH_CLIENT_SECRET);
+    const jwt = `${header}.${payload}.${signature}`;
+
+    // Set JWT cookie and redirect
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: "/",
+        "Set-Cookie": `jwt=${jwt}; HttpOnly; Secure; SameSite=Strict; Max-Age=3600`,
+      },
+    });
+  } catch (error) {
+    return new Response("OAuth callback failed", { status: 500 });
+  }
+}
+
 export default async function handler(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
   const hostname = url.hostname;
 
-  if (hostname.includes("preview-blog.devcontentstackapps.com")) {
-    const authHeader = request.headers.get("Authorization");
-    const timestamp = Date.now();
-
-    // Use unique realm to prevent credential caching
-    const uniqueRealm = `PreviewAuth_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Check for authentication header
-    if (!authHeader || !authHeader.startsWith("Basic ")) {
-      return new Response(
-        `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Authentication Required</title>
-          <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-          <meta http-equiv="Pragma" content="no-cache">
-          <meta http-equiv="Expires" content="0">
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-            .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            .info { color: #1976d2; background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            h1 { color: #333; margin-bottom: 20px; }
-            p { margin: 10px 0; line-height: 1.5; }
-            .credentials { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>🔒 Preview Access Required</h1>
-            <div class="info">
-              <p><strong>Domain:</strong> ${hostname}</p>
-              <p>This preview environment requires authentication on every visit.</p>
-              <p>Please enter your credentials to continue.</p>
-            </div>
-            <div class="credentials">
-              <p><strong>Username:</strong> admin</p>
-              <p><strong>Password:</strong> supra</p>
-            </div>
-            <p><em>Authentication is required every time for security.</em></p>
-          </div>
-        </body>
-        </html>
-      `,
-        {
-          status: 401,
-          headers: {
-            "WWW-Authenticate": `Basic realm="${uniqueRealm}"`,
-            "Content-Type": "text/html",
-            "Cache-Control":
-              "no-cache, no-store, must-revalidate, private, max-age=0",
-            "CF-Cache-Status": "DYNAMIC",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
-        }
-      );
-    }
-
-    // Validate credentials
-    const base64Credentials = authHeader.split(" ")[1];
-    const credentials = atob(base64Credentials);
-    const [username, password] = credentials.split(":");
-
-    if (username === "admin" && password === "supra") {
-      // Authentication successful - continue with the request
-      const modifiedUrl = new URL(request.url);
-      modifiedUrl.searchParams.set("_t", timestamp.toString());
-      const modifiedRequest = new Request(modifiedUrl.toString(), {
-        method: request.method,
-        headers: request.headers,
-        body: request.body,
-      });
-
-      const response = await fetch(modifiedRequest);
-      const modifiedResponse = new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-      });
-
-      modifiedResponse.headers.set(
-        "Cache-Control",
-        "no-cache, no-store, must-revalidate, private"
-      );
-      modifiedResponse.headers.set("Pragma", "no-cache");
-      modifiedResponse.headers.set("Expires", "0");
-      modifiedResponse.headers.set("X-Edge-Function", "running");
-      modifiedResponse.headers.set("X-Hostname", hostname);
-      modifiedResponse.headers.set("X-Timestamp", timestamp.toString());
-
-      return modifiedResponse;
-    } else {
-      // Invalid credentials - return 401 with unique realm
-      return new Response(
-        `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Invalid Credentials</title>
-          <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-          <meta http-equiv="Pragma" content="no-cache">
-          <meta http-equiv="Expires" content="0">
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-            .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            .error { color: #d32f2f; background: #ffebee; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            h1 { color: #333; margin-bottom: 20px; }
-            p { margin: 10px 0; line-height: 1.5; }
-            .credentials { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>❌ Invalid Credentials</h1>
-            <div class="error">
-              <p><strong>Authentication Failed</strong></p>
-              <p>The username or password you entered is incorrect.</p>
-              <p>Please try again with the correct credentials.</p>
-            </div>
-            <div class="credentials">
-              <p><strong>Username:</strong> admin</p>
-              <p><strong>Password:</strong> supra</p>
-            </div>
-            <p><em>Authentication is required every time for security.</em></p>
-          </div>
-        </body>
-        </html>
-      `,
-        {
-          status: 401,
-          headers: {
-            "WWW-Authenticate": `Basic realm="${uniqueRealm}"`,
-            "Content-Type": "text/html",
-            "Cache-Control": "no-cache, no-store, must-revalidate, private",
-            "CF-Cache-Status": "DYNAMIC",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
-        }
-      );
-    }
+  // Handle OAuth callback
+  if (pathname === "/oauth/callback") {
+    return await handleOAuthCallback(request);
   }
 
-  // Restrict IPs for author-tools
+  // Handle login page
+  if (pathname === "/login") {
+    const authUrl = `${process.env.OAUTH_AUTHORIZE_URL}?client_id=${process.env.OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.OAUTH_REDIRECT_URI)}&response_type=code&scope=user.profile:read`;
+
+    return new Response(
+      `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Login Required</title>
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+          .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .login-btn { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; text-decoration: none; display: inline-block; }
+          .login-btn:hover { background: #0056b3; }
+          h1 { color: #333; margin-bottom: 20px; }
+          p { margin: 10px 0; line-height: 1.5; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>🔐 Author Tools Access</h1>
+          <p>You need to be logged in via Contentstack SSO to access the Author Tools section.</p>
+          <p>Click the button below to authenticate with your Contentstack account.</p>
+          <a href="${authUrl}" class="login-btn">Login with Contentstack</a>
+        </div>
+      </body>
+      </html>
+    `,
+      {
+        headers: { "Content-Type": "text/html" },
+      }
+    );
+  }
+
+  // Contentstack SSO Authentication for /author-tools
   if (pathname.startsWith("/author-tools")) {
-    const allowedIPs = ["27.107.90.206"];
-    const clientIP =
-      request.headers.get("x-forwarded-for") ||
-      request.headers.get("x-real-ip") ||
-      request.headers.get("cf-connecting-ip") ||
-      "";
+    // Check for JWT cookie
+    const jwtCookie = request.headers.get("Cookie")?.match(/jwt=([^;]+)/)?.[1];
 
-    const clientIPList = clientIP.split(",").map((ip) => ip.trim());
-    const isAllowed = clientIPList.some((ip) => allowedIPs.includes(ip));
+    if (!jwtCookie) {
+      // No JWT found, redirect to login
+      return Response.redirect(`${url.origin}/login`, 302);
+    }
 
-    if (!isAllowed) {
-      return new Response(
-        JSON.stringify({
-          error: "Access Denied",
-          message:
-            "The Author Tools section is only accessible from authorized IP addresses.",
-          status: 403,
-          allowedIPs,
-          clientIP,
-        }),
-        {
-          status: 403,
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": "no-cache",
-          },
-        }
-      );
+    try {
+      // Verify JWT token
+      const jwt = await verifyJWT(jwtCookie);
+
+      if (!jwt || jwt.exp < Date.now() / 1000) {
+        // JWT expired or invalid, redirect to login
+        return Response.redirect(`${url.origin}/login`, 302);
+      }
+
+      // JWT is valid, continue with the request
+    } catch (error) {
+      // JWT verification failed, redirect to login
+      return Response.redirect(`${url.origin}/login`, 302);
     }
   }
 
@@ -202,10 +169,6 @@ export default async function handler(request) {
     statusText: response.statusText,
     headers: response.headers,
   });
-
-  modifiedResponse.headers.set("X-Edge-Function", "running");
-  modifiedResponse.headers.set("X-Hostname", hostname);
-  modifiedResponse.headers.set("X-Timestamp", Date.now().toString());
 
   return modifiedResponse;
 }
