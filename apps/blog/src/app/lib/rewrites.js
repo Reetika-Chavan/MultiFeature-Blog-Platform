@@ -18,11 +18,10 @@ export async function processRewrites(rewrites, request) {
         `Contains preview-blog: ${url.hostname.includes("preview-blog.devcontentstackapps.com")}`
       );
 
-      if (
-        url.hostname.includes("blog-test.devcontentstackapps.com") ||
-        url.hostname.includes("preview-blog.devcontentstackapps.com")
-      ) {
-        console.log(`Rewrite skipped for test domain: ${url.hostname}`);
+      if (url.hostname !== "blog.devcontentstackapps.com") {
+        console.log(
+          `Rewrite skipped for non-production domain: ${url.hostname}`
+        );
         continue;
       }
       console.log(
@@ -30,7 +29,6 @@ export async function processRewrites(rewrites, request) {
       );
     }
 
-    // Check if the path matches (including query parameters for /blog)
     if (
       rule.source === "/blog" &&
       url.pathname === "/blog" &&
