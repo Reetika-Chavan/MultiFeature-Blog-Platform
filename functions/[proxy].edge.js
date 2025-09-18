@@ -11,11 +11,16 @@ export default async function handler(request) {
     const authHeader = request.headers.get("Authorization");
 
     if (!authHeader || !authHeader.startsWith("Basic ")) {
+      // Add timestamp to realm to prevent browser caching
+      const timestamp = Date.now();
       return new Response("Authentication Required", {
         status: 401,
         headers: {
-          "WWW-Authenticate": 'Basic realm="Protected Preview Area"',
+          "WWW-Authenticate": `Basic realm="Protected Preview Area ${timestamp}"`,
           "Content-Type": "text/html",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
       });
     }
@@ -26,11 +31,16 @@ export default async function handler(request) {
 
     if (username === "admin" && password === "supra") {
     } else {
+      // Add timestamp to realm to prevent browser caching
+      const timestamp = Date.now();
       return new Response("Unauthorized", {
         status: 401,
         headers: {
-          "WWW-Authenticate": 'Basic realm="Protected Preview Area"',
+          "WWW-Authenticate": `Basic realm="Protected Preview Area ${timestamp}"`,
           "Content-Type": "text/html",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
       });
     }
