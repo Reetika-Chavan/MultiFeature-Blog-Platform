@@ -15,7 +15,7 @@ export async function processRewrites(rewrites, request) {
         url.hostname.includes("preview-blog.devcontentstackapps.com")
       ) {
         console.log(`Rewrite skipped for test domain: ${url.hostname}`);
-        continue; // Skip this rewrite rule entirely
+        continue; 
       }
     }
 

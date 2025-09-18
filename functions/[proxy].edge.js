@@ -6,7 +6,6 @@ export default async function handler(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
-  // 🔒 Restrict access to /author-tools
   if (pathname.startsWith("/author-tools")) {
     const allowedIPs = ["27.107.90.206"];
 
@@ -40,17 +39,16 @@ export default async function handler(request) {
     }
   }
 
-  // 🔀 Redirects
+  // Redirects
   const redirectResponse = processRedirects(redirectsConfig.redirects, request);
   if (redirectResponse) return redirectResponse;
 
-  // 🔀 Rewrites
+  // Rewrites
   const rewriteResponse = await processRewrites(
     redirectsConfig.rewrites,
     request
   );
   if (rewriteResponse) return rewriteResponse;
 
-  // Default
   return fetch(request);
 }

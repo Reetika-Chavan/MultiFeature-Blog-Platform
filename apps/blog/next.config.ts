@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
         hostname: "dev11-images.csnonprod.com",
       },
     ],
+    unoptimized: true,
   },
 };
 
