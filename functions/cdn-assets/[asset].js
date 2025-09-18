@@ -30,27 +30,29 @@ export default async function handler(req, res, context) {
     console.log("Proxy fetching:", finalUrl);
 
     // Fetch from Contentstack
-    https.get(finalUrl, (proxyRes) => {
-      if (proxyRes.statusCode !== 200) {
-        return res
-          .status(proxyRes.statusCode)
-          .send(`Error fetching asset: ${proxyRes.statusCode}`);
-      }
+    https
+      .get(finalUrl, (proxyRes) => {
+        if (proxyRes.statusCode !== 200) {
+          return res
+            .status(proxyRes.statusCode)
+            .send(`Error fetching asset: ${proxyRes.statusCode}`);
+        }
 
-      // Set headers for images
-      res.setHeader(
-        "Content-Type",
-        proxyRes.headers["content-type"] || "application/octet-stream"
-      );
-      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-      res.setHeader("Access-Control-Allow-Origin", "*");
+        // Set headers for images
+        res.setHeader(
+          "Content-Type",
+          proxyRes.headers["content-type"] || "application/octet-stream"
+        );
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        res.setHeader("Access-Control-Allow-Origin", "*");
 
-      // Stream back to client
-      proxyRes.pipe(res);
-    }).on("error", (err) => {
-      console.error("Proxy error:", err);
-      res.status(500).send("Internal Server Error");
-    });
+        // Stream back to client
+        proxyRes.pipe(res);
+      })
+      .on("error", (err) => {
+        console.error("Proxy error:", err);
+        res.status(500).send("Internal Server Error");
+      });
   } catch (err) {
     console.error("Handler error:", err);
     res.status(500).send("Internal Server Error");
