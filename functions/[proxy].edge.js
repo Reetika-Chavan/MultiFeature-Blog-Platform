@@ -10,8 +10,9 @@ export default async function handler(request) {
   if (hostname.includes("preview-blog.devcontentstackapps.com")) {
     const authHeader = request.headers.get("Authorization");
 
+    const timestamp = Date.now();
+
     if (!authHeader || !authHeader.startsWith("Basic ")) {
-      const timestamp = Date.now();
       return new Response(
         `
         <!DOCTYPE html>
@@ -49,8 +50,34 @@ export default async function handler(request) {
     const [username, password] = credentials.split(":");
 
     if (username === "admin" && password === "supra") {
+      
+      const modifiedUrl = new URL(request.url);
+      modifiedUrl.searchParams.set("_t", timestamp.toString());
+      const modifiedRequest = new Request(modifiedUrl.toString(), {
+        method: request.method,
+        headers: request.headers,
+        body: request.body,
+      });
+
+      const response = await fetch(modifiedRequest);
+      const modifiedResponse = new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
+
+      modifiedResponse.headers.set(
+        "Cache-Control",
+        "no-cache, no-store, must-revalidate, private"
+      );
+      modifiedResponse.headers.set("Pragma", "no-cache");
+      modifiedResponse.headers.set("Expires", "0");
+      modifiedResponse.headers.set("X-Edge-Function", "running");
+      modifiedResponse.headers.set("X-Hostname", hostname);
+      modifiedResponse.headers.set("X-Timestamp", timestamp.toString());
+
+      return modifiedResponse;
     } else {
-      const timestamp = Date.now();
       return new Response("Unauthorized", {
         status: 401,
         headers: {
@@ -109,7 +136,6 @@ export default async function handler(request) {
   );
   if (rewriteResponse) return rewriteResponse;
 
-  // Debug: Add headers to confirm edge function is running
   const response = await fetch(request);
   const modifiedResponse = new Response(response.body, {
     status: response.status,
@@ -117,7 +143,6 @@ export default async function handler(request) {
     headers: response.headers,
   });
 
-  // Add debug headers
   modifiedResponse.headers.set("X-Edge-Function", "running");
   modifiedResponse.headers.set("X-Hostname", hostname);
   modifiedResponse.headers.set("X-Timestamp", Date.now().toString());
