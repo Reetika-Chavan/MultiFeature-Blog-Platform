@@ -12,10 +12,10 @@ export async function processRewrites(rewrites, request) {
     if (rule.onlyOnProd) {
       console.log(`Checking domain restrictions for: ${url.hostname}`);
       console.log(
-        `Contains blog-test: ${url.hostname.includes("blog-test.devcontentstackapps.com")}`
+        `Is production domain: ${url.hostname === "blog.devcontentstackapps.com"}`
       );
       console.log(
-        `Contains preview-blog: ${url.hostname.includes("preview-blog.devcontentstackapps.com")}`
+        `Rule source: ${rule.source}, Rule destination: ${rule.destination}`
       );
 
       if (url.hostname !== "blog.devcontentstackapps.com") {
