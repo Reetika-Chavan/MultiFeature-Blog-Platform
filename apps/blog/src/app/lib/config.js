@@ -9,13 +9,18 @@ export const redirectsConfig = {
   rewrites: [
     {
       source: "/latest",
-      destination: "/blog?page=1",
+      destination: "/blog/latest",
       onlyOnProd: true,
     },
     {
       source: "/blog",
       destination: "/blog/latest",
       onlyOnProd: true,
+    },
+    {
+      source: "/blog",
+      destination: "/404",
+      onlyOnPreview: true,
     },
   ],
 };

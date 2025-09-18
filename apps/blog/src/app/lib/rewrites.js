@@ -29,6 +29,24 @@ export async function processRewrites(rewrites, request) {
       );
     }
 
+    if (rule.onlyOnPreview) {
+      console.log(`Checking preview domain restrictions for: ${url.hostname}`);
+      console.log(
+        `Is preview domain: ${url.hostname.includes("preview-blog.devcontentstackapps.com") || url.hostname.includes("blog-test.devcontentstackapps.com")}`
+      );
+
+      if (
+        url.hostname !== "preview-blog.devcontentstackapps.com" &&
+        url.hostname !== "blog-test.devcontentstackapps.com"
+      ) {
+        console.log(`Rewrite skipped for non-preview domain: ${url.hostname}`);
+        continue;
+      }
+      console.log(
+        `Preview domain check passed, rewrite will execute for: ${url.hostname}`
+      );
+    }
+
     if (
       rule.source === "/blog" &&
       url.pathname === "/blog" &&
