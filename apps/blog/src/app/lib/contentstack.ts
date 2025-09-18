@@ -49,6 +49,18 @@ export async function getLatestBlogPost(locale = "en-us") {
   }
 }
 
+export async function getGenerativeBlogPost(locale = "en-us") {
+  try {
+    const Query = Stack.ContentType("blogpost").Query();
+    Query.where("url", "/blog/generativeai").language(locale);
+    const response = await Query.toJSON().find();
+    return response?.[0]?.[0] || null;
+  } catch (error) {
+    console.error("Contentstack AI fetch error:", error);
+    return null;
+  }
+}
+
 export async function getAllBlogPosts(locale = "en-us") {
   try {
     const Query = Stack.ContentType("blogpost").Query();

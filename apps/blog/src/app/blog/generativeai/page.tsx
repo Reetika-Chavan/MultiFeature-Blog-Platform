@@ -1,0 +1,99 @@
+import { getGenerativeBlogPost } from "@/app/lib/contentstack";
+import { detectLocale } from "@/app/lib/detectLocale";
+import LanguageSwitcher from "@/app/components/LanguageSwitcher";
+import Image from "next/image";
+
+export const revalidate = 40;
+
+interface BlogEntry {
+  title: string;
+  url: string;
+  content: string;
+  category: string;
+  tags?: string[];
+  banner_image?: {
+    url: string;
+    title?: string;
+  };
+}
+
+export default async function GenerativeBlogPost({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>;
+}) {
+  const { lang } = await searchParams;
+
+  const locale = lang || (await detectLocale());
+  let entry: BlogEntry | null = await getGenerativeBlogPost(locale);
+
+  if (!entry && locale !== "en-us") {
+    entry = await getGenerativeBlogPost("en-us");
+  }
+
+  if (!entry) {
+    return (
+      <p className="text-center py-10 text-red-500">
+        Failed to load blog post.
+      </p>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        {/* Language Switcher and Cache Revalidation */}
+        <div className="mb-4 flex justify-between items-center">
+          <LanguageSwitcher />
+          <div className="flex flex-col items-end gap-2">
+            <a
+              href="https://dev11-app.csnonprod.com/automations-api/run/6783367e138a4c799daff5195c70df1b"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              Revalidate Cache
+            </a>
+            <p className="text-xs text-gray-400">
+              Page loaded: {new Date().toLocaleTimeString()}
+            </p>
+          </div>
+        </div>
+
+        {entry.banner_image?.url && (
+          <Image
+            src={entry.banner_image.url}
+            alt={entry.banner_image.title || "Banner"}
+            width={1200}
+            height={500}
+            className="w-full h-72 object-cover rounded-2xl shadow-lg"
+          />
+        )}
+
+        <div className="mt-6">
+          <h1 className="text-4xl font-bold">{entry.title}</h1>
+          <p className="mt-2 text-sm text-gray-300">
+            Category: <span className="font-medium">{entry.category}</span>
+          </p>
+          {entry.tags && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {entry.tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="bg-gray-700 text-gray-200 text-xs px-3 py-1 rounded-full"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div
+          className="prose prose-lg prose-invert mt-6 max-w-none"
+          dangerouslySetInnerHTML={{ __html: entry.content }}
+        />
+      </div>
+    </div>
+  );
+}
