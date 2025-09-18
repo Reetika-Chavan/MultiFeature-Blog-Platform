@@ -1,20 +1,18 @@
 import https from "https";
 import http from "http";
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   try {
-    console.log("Asset proxy called with URL:", req.url);
-    console.log("Asset name from params:", req.params.asset);
-
-    // Get the asset name from the path parameter
-    const assetName = req.params.asset;
+    // Extract asset name from the requested path
+    // Example: /cdn-assets/blog-cover.png?w=400 → blog-cover.png
+    const assetName = req.url.split("/cdn-assets/")[1]?.split("?")[0];
+    console.log("Requested asset:", assetName);
 
     if (!assetName) {
-      console.log("No asset name provided");
       return res.status(400).send("Bad Request: Missing asset name");
     }
 
-    // Asset mapping with the correct Contentstack Image API URL
+    // Map cdn-assets → actual Contentstack assets
     const assetMap = {
       "blog-cover.png":
         "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
@@ -26,22 +24,18 @@ export default function handler(req, res) {
         "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
     };
 
-    const baseUrl = assetMap[assetName.split("?")[0]];
+    const baseUrl = assetMap[assetName];
     if (!baseUrl) {
-      console.log("Asset not found in map:", assetName);
       return res.status(404).send("Asset not found");
     }
 
-    console.log("Found asset URL:", baseUrl);
-
-    // Preserve query parameters for Contentstack Image API optimization
+    // Preserve query params (?w=400&fm=webp)
     const url = new URL(req.url, `https://${req.headers.host}`);
     const query = url.search || "";
     const finalUrl = `${baseUrl}${query}`;
-
     console.log("Proxy fetching:", finalUrl);
 
-    // Use Node.js built-in modules to fetch the image
+    // Pick correct client
     const targetUrl = new URL(finalUrl);
     const isHttps = targetUrl.protocol === "https:";
     const client = isHttps ? https : http;
@@ -58,14 +52,13 @@ export default function handler(req, res) {
     };
 
     const proxyReq = client.request(options, (proxyRes) => {
-      console.log("Proxy response status:", proxyRes.statusCode);
-
       if (proxyRes.statusCode !== 200) {
-        console.log("Failed to fetch asset:", proxyRes.statusCode);
-        return res.status(proxyRes.statusCode).send("Error fetching asset");
+        return res
+          .status(proxyRes.statusCode)
+          .send(`Error fetching asset: ${proxyRes.statusCode}`);
       }
 
-      // Set appropriate headers for image serving
+      // Pass image headers
       res.setHeader(
         "Content-Type",
         proxyRes.headers["content-type"] || "application/octet-stream"
@@ -73,7 +66,7 @@ export default function handler(req, res) {
       res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
       res.setHeader("Access-Control-Allow-Origin", "*");
 
-      // Pipe the response directly to the client
+      // Stream back
       proxyRes.pipe(res);
     });
 
@@ -84,7 +77,7 @@ export default function handler(req, res) {
 
     proxyReq.end();
   } catch (err) {
-    console.error("Asset Proxy Error:", err);
+    console.error("Handler Error:", err);
     res.status(500).send("Internal Server Error");
   }
 }
