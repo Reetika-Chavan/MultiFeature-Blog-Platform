@@ -6,6 +6,7 @@ export default function handler(req, res) {
     console.log("Asset proxy called with URL:", req.url);
     console.log("Asset name from params:", req.params.asset);
 
+    // Get the asset name from the path parameter
     const assetName = req.params.asset;
 
     if (!assetName) {
@@ -18,6 +19,10 @@ export default function handler(req, res) {
       "blog-cover.png":
         "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
       "blog.png":
+        "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
+      "hero-image.jpg":
+        "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
+      "featured-image.png":
         "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
     };
 
