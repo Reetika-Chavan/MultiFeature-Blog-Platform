@@ -9,8 +9,37 @@ export default async function handler(request) {
 
   if (hostname.includes("preview-blog.devcontentstackapps.com")) {
     const authHeader = request.headers.get("Authorization");
-
     const timestamp = Date.now();
+
+    // Debug: Add headers to see what's happening
+    const debugResponse = new Response(
+      `
+      <!DOCTYPE html>
+      <html>
+      <head><title>Debug Info</title></head>
+      <body>
+        <h1>Debug Information</h1>
+        <p><strong>Hostname:</strong> ${hostname}</p>
+        <p><strong>Auth Header:</strong> ${authHeader ? "Present" : "Missing"}</p>
+        <p><strong>Auth Header Value:</strong> ${authHeader || "None"}</p>
+        <p><strong>Timestamp:</strong> ${timestamp}</p>
+        <p><strong>URL:</strong> ${request.url}</p>
+      </body>
+      </html>
+    `,
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html",
+          "Cache-Control": "no-cache, no-store, must-revalidate, private",
+          "X-Debug": "true",
+          "X-Hostname": hostname,
+          "X-Auth-Header": authHeader ? "present" : "missing",
+        },
+      }
+    );
+
+    return debugResponse;
 
     if (!authHeader || !authHeader.startsWith("Basic ")) {
       return new Response(
@@ -50,7 +79,6 @@ export default async function handler(request) {
     const [username, password] = credentials.split(":");
 
     if (username === "admin" && password === "supra") {
-      
       const modifiedUrl = new URL(request.url);
       modifiedUrl.searchParams.set("_t", timestamp.toString());
       const modifiedRequest = new Request(modifiedUrl.toString(), {
