@@ -2,8 +2,7 @@ import { getGenerativeBlogPost } from "@/app/lib/contentstack";
 import { detectLocale } from "@/app/lib/detectLocale";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
-
-export const revalidate = 40;
+import RevalidateButton from "./RevalidateButton";
 
 interface BlogEntry {
   title: string;
@@ -46,14 +45,7 @@ export default async function GenerativeBlogPost({
         <div className="mb-4 flex justify-between items-center">
           <LanguageSwitcher />
           <div className="flex flex-col items-end gap-2">
-            <a
-              href="https://dev11-app.csnonprod.com/automations-api/run/6783367e138a4c799daff5195c70df1b"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              Revalidate Cache
-            </a>
+            <RevalidateButton />
             <p className="text-xs text-gray-400">
               Page loaded: {new Date().toLocaleTimeString()}
             </p>

@@ -27,40 +27,61 @@ export default async function handler(request, env) {
 
   // Password protection for specific domains
   console.log("Checking hostname for password protection:", hostname);
-  if (hostname.includes("preview-blog.devcontentstackapps.com")) {
+  if (hostname.includes("blog-preview.devcontentstackapps.com")) {
     console.log("Preview domain detected - checking authentication");
-    // Check for Basic Authentication
-    const authHeader = request.headers.get("Authorization");
-    console.log("Auth header present:", !!authHeader);
 
-    if (!authHeader || !authHeader.startsWith("Basic ")) {
+    const validUsername = env?.PREVIEW_USERNAME;
+    const validPassword = env?.PREVIEW_PASSWORD;
+
+    const authHeader = request.headers.get("authorization");
+
+    if (authHeader && authHeader.startsWith("Basic ")) {
+      try {
+        const credentials = atob(authHeader.slice(6));
+        const [username, password] = credentials.split(":");
+
+        if (username === validUsername && password === validPassword) {
+          console.log("Authentication successful");
+          // Continue with the request
+        } else {
+          console.log("Invalid credentials");
+          return new Response("Unauthorized", {
+            status: 401,
+            headers: {
+              "WWW-Authenticate": 'Basic realm="Preview Access"',
+              "Content-Type": "text/plain",
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              Pragma: "no-cache",
+              Expires: "0",
+            },
+          });
+        }
+      } catch (error) {
+        console.log("Error parsing credentials:", error);
+        return new Response("Authentication Error", {
+          status: 401,
+          headers: {
+            "WWW-Authenticate": 'Basic realm="Preview Access"',
+            "Content-Type": "text/plain",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        });
+      }
+    } else {
       console.log("No valid auth header - returning 401");
       return new Response("Authentication Required", {
         status: 401,
         headers: {
-          "WWW-Authenticate": 'Basic realm="Protected Area"',
-          "Content-Type": "text/html",
+          "WWW-Authenticate": 'Basic realm="Preview Access"',
+          "Content-Type": "text/plain",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
       });
     }
-
-    // Validate credentials (admin/supra)
-    const base64Credentials = authHeader.split(" ")[1];
-    const credentials = atob(base64Credentials);
-    const [username, password] = credentials.split(":");
-    console.log("Credentials:", { username, password });
-
-    if (username !== "admin" || password !== "supra") {
-      console.log("Invalid credentials - returning 401");
-      return new Response("Unauthorized", {
-        status: 401,
-        headers: {
-          "WWW-Authenticate": 'Basic realm="Protected Area"',
-          "Content-Type": "text/html",
-        },
-      });
-    }
-    console.log("Authentication successful");
   } else {
     console.log("Not a preview domain - skipping password protection");
   }
