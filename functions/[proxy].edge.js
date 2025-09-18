@@ -5,7 +5,8 @@ import { redirectsConfig } from "../apps/blog/src/app/lib/config.js";
 // JWT verification function
 async function verifyJWT(token) {
   try {
-    const secret = process.env.OAUTH_CLIENT_SECRET;
+    // In Contentstack Launch, environment variables are accessed via globalThis
+    const secret = globalThis.OAUTH_CLIENT_SECRET;
     if (!secret) {
       throw new Error("OAUTH_CLIENT_SECRET not configured");
     }
@@ -34,17 +35,17 @@ async function handleOAuthCallback(request) {
 
   try {
     // Exchange code for tokens
-    const tokenResponse = await fetch(process.env.OAUTH_TOKEN_URL, {
+    const tokenResponse = await fetch(globalThis.OAUTH_TOKEN_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
         grant_type: "authorization_code",
-        client_id: process.env.OAUTH_CLIENT_ID,
-        client_secret: process.env.OAUTH_CLIENT_SECRET,
+        client_id: globalThis.OAUTH_CLIENT_ID,
+        client_secret: globalThis.OAUTH_CLIENT_SECRET,
         code: code,
-        redirect_uri: process.env.OAUTH_REDIRECT_URI,
+        redirect_uri: globalThis.OAUTH_REDIRECT_URI,
       }),
     });
 
@@ -64,7 +65,7 @@ async function handleOAuthCallback(request) {
     // Create JWT (simplified - in production use proper JWT library)
     const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
     const payload = btoa(JSON.stringify(jwtPayload));
-    const signature = btoa(process.env.OAUTH_CLIENT_SECRET);
+    const signature = btoa(globalThis.OAUTH_CLIENT_SECRET);
     const jwt = `${header}.${payload}.${signature}`;
 
     // Set JWT cookie and redirect
@@ -92,7 +93,7 @@ export default async function handler(request) {
 
   // Handle login page
   if (pathname === "/login") {
-    const authUrl = `${process.env.OAUTH_AUTHORIZE_URL}?client_id=${process.env.OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.OAUTH_REDIRECT_URI)}&response_type=code&scope=user.profile:read`;
+    const authUrl = `${globalThis.OAUTH_AUTHORIZE_URL}?client_id=${globalThis.OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(globalThis.OAUTH_REDIRECT_URI)}&response_type=code&scope=user.profile:read`;
 
     return new Response(
       `
@@ -123,6 +124,32 @@ export default async function handler(request) {
         headers: { "Content-Type": "text/html" },
       }
     );
+  }
+
+  // Contentstack SSO Authentication for /author-tools
+  if (pathname.startsWith("/author-tools")) {
+    // Check for JWT cookie
+    const jwtCookie = request.headers.get("Cookie")?.match(/jwt=([^;]+)/)?.[1];
+
+    if (!jwtCookie) {
+      // No JWT found, redirect to login
+      return Response.redirect(`${url.origin}/login`, 302);
+    }
+
+    try {
+      // Verify JWT token
+      const jwt = await verifyJWT(jwtCookie);
+
+      if (!jwt || jwt.exp < Date.now() / 1000) {
+        // JWT expired or invalid, redirect to login
+        return Response.redirect(`${url.origin}/login`, 302);
+      }
+
+      // JWT is valid, continue with the request
+    } catch (error) {
+      // JWT verification failed, redirect to login
+      return Response.redirect(`${url.origin}/login`, 302);
+    }
   }
 
   // Contentstack SSO Authentication for /author-tools
