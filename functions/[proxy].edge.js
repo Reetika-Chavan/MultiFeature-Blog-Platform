@@ -5,6 +5,36 @@ import { redirectsConfig } from "../apps/blog/src/app/lib/config.js";
 export default async function handler(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
+  const hostname = url.hostname;
+
+  if (hostname.includes("preview-blog.devcontentstackapps.com")) {
+    const authHeader = request.headers.get("Authorization");
+
+    if (!authHeader || !authHeader.startsWith("Basic ")) {
+      return new Response("Authentication Required", {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": 'Basic realm="Protected Preview Area"',
+          "Content-Type": "text/html",
+        },
+      });
+    }
+
+    const base64Credentials = authHeader.split(" ")[1];
+    const credentials = atob(base64Credentials);
+    const [username, password] = credentials.split(":");
+
+    if (username === "admin" && password === "supra") {
+    } else {
+      return new Response("Unauthorized", {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": 'Basic realm="Protected Preview Area"',
+          "Content-Type": "text/html",
+        },
+      });
+    }
+  }
 
   if (pathname.startsWith("/author-tools")) {
     const allowedIPs = ["27.107.90.206"];
