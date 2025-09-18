@@ -109,29 +109,42 @@ export default async function handler(request, env) {
 
   // Handle login page
   if (pathname === "/login") {
-    const authUrl = `${OAUTH_AUTHORIZE_URL}?client_id=${OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(OAUTH_REDIRECT_URI)}&response_type=code&scope=user.profile:read`;
+    // Debug: Show what environment variables are available
+    const debugInfo = {
+      OAUTH_CLIENT_ID: OAUTH_CLIENT_ID || "undefined",
+      OAUTH_CLIENT_SECRET: OAUTH_CLIENT_SECRET ? "Set" : "undefined",
+      OAUTH_REDIRECT_URI: OAUTH_REDIRECT_URI || "undefined",
+      OAUTH_TOKEN_URL: OAUTH_TOKEN_URL || "undefined",
+      OAUTH_AUTHORIZE_URL: OAUTH_AUTHORIZE_URL || "undefined",
+      globalThisKeys: Object.keys(globalThis).filter((key) =>
+        key.includes("OAUTH")
+      ),
+      envKeys: env
+        ? Object.keys(env).filter((key) => key.includes("OAUTH"))
+        : "env is undefined",
+    };
 
     return new Response(
       `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Login Required</title>
+        <title>Environment Debug</title>
         <style>
-          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-          .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-          .login-btn { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; text-decoration: none; display: inline-block; }
-          .login-btn:hover { background: #0056b3; }
+          body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+          .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .debug { background: #f0f0f0; padding: 20px; border-radius: 8px; margin: 20px 0; font-family: monospace; font-size: 12px; }
           h1 { color: #333; margin-bottom: 20px; }
           p { margin: 10px 0; line-height: 1.5; }
         </style>
       </head>
       <body>
         <div class="container">
-          <h1>🔐 Author Tools Access</h1>
-          <p>You need to be logged in via Contentstack SSO to access the Author Tools section.</p>
-          <p>Click the button below to authenticate with your Contentstack account.</p>
-          <a href="${authUrl}" class="login-btn">Login with Contentstack</a>
+          <h1>🔍 Environment Variables Debug</h1>
+          <div class="debug">
+            <pre>${JSON.stringify(debugInfo, null, 2)}</pre>
+          </div>
+          <p>This debug page shows what environment variables are available.</p>
         </div>
       </body>
       </html>
