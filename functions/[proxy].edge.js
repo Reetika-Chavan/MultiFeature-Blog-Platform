@@ -11,68 +11,59 @@ export default async function handler(request) {
     const authHeader = request.headers.get("Authorization");
     const timestamp = Date.now();
 
-    // Debug: Add headers to see what's happening
-    const debugResponse = new Response(
+    // ALWAYS require authentication - ignore cached credentials
+    // Force browser to show auth dialog every time
+    const uniqueRealm = `PreviewAuth_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Always return 401 to force fresh authentication
+    return new Response(
       `
       <!DOCTYPE html>
       <html>
-      <head><title>Debug Info</title></head>
+      <head>
+        <title>Authentication Required</title>
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+          .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .info { color: #1976d2; background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          h1 { color: #333; margin-bottom: 20px; }
+          p { margin: 10px 0; line-height: 1.5; }
+          .credentials { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        </style>
+      </head>
       <body>
-        <h1>Debug Information</h1>
-        <p><strong>Hostname:</strong> ${hostname}</p>
-        <p><strong>Auth Header:</strong> ${authHeader ? "Present" : "Missing"}</p>
-        <p><strong>Auth Header Value:</strong> ${authHeader || "None"}</p>
-        <p><strong>Timestamp:</strong> ${timestamp}</p>
-        <p><strong>URL:</strong> ${request.url}</p>
+        <div class="container">
+          <h1>🔒 Preview Access Required</h1>
+          <div class="info">
+            <p><strong>Domain:</strong> ${hostname}</p>
+            <p>This preview environment requires authentication on every visit.</p>
+            <p>Please enter your credentials to continue.</p>
+          </div>
+          <div class="credentials">
+            <p><strong>Username:</strong> admin</p>
+            <p><strong>Password:</strong> supra</p>
+          </div>
+          <p><em>Authentication is required every time for security.</em></p>
+        </div>
       </body>
       </html>
     `,
       {
-        status: 200,
+        status: 401,
         headers: {
+          "WWW-Authenticate": `Basic realm="${uniqueRealm}"`,
           "Content-Type": "text/html",
-          "Cache-Control": "no-cache, no-store, must-revalidate, private",
-          "X-Debug": "true",
-          "X-Hostname": hostname,
-          "X-Auth-Header": authHeader ? "present" : "missing",
+          "Cache-Control":
+            "no-cache, no-store, must-revalidate, private, max-age=0",
+          "CF-Cache-Status": "DYNAMIC",
+          Pragma: "no-cache",
+          Expires: "0",
         },
       }
     );
-
-    return debugResponse;
-
-    if (!authHeader || !authHeader.startsWith("Basic ")) {
-      return new Response(
-        `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Authentication Required</title>
-          <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-          <meta http-equiv="Pragma" content="no-cache">
-          <meta http-equiv="Expires" content="0">
-        </head>
-        <body>
-          <h1>Authentication Required</h1>
-          <p>Please enter your credentials to access the preview environment.</p>
-          <p>Username: admin, Password: supra</p>
-        </body>
-        </html>
-      `,
-        {
-          status: 401,
-          headers: {
-            "WWW-Authenticate": `Basic realm="Protected Preview Area ${timestamp}"`,
-            "Content-Type": "text/html",
-            "Cache-Control":
-              "no-cache, no-store, must-revalidate, private, max-age=0",
-            "CF-Cache-Status": "DYNAMIC",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
-        }
-      );
-    }
 
     const base64Credentials = authHeader.split(" ")[1];
     const credentials = atob(base64Credentials);
