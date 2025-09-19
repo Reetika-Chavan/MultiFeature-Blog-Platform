@@ -17,9 +17,9 @@ interface BlogEntry {
 export default async function GenerativeBlogPost({
   searchParams,
 }: {
-  searchParams?: { lang?: string };
+  searchParams: Promise<{ lang?: string }>;
 }) {
-  const lang = searchParams?.lang || "";
+  const { lang } = await searchParams;
 
   // ✅ Fetch from API that sets cache headers
   const res = await fetch(
