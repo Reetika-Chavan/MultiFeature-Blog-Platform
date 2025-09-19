@@ -1,6 +1,8 @@
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
 import RevalidateButton from "../../components/RevalidateButton";
+import { getGenerativeBlogPost } from "@/app/lib/contentstack";
+import { detectLocale } from "@/app/lib/detectLocale";
 
 interface BlogEntry {
   title: string;
@@ -20,17 +22,15 @@ export default async function GenerativeBlogPost({
   searchParams: Promise<{ lang?: string }>;
 }) {
   const { lang } = await searchParams;
+  const locale = lang || (await detectLocale());
 
-  // ✅ Fetch from API that sets cache headers
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_SITE_URL}/api/generative-blog?lang=${lang}`,
-    {
-      // ensure Next respects caching too
-      next: { revalidate: 40 },
-    }
-  );
+  // ✅ Fetch directly from Contentstack
+  let entry: BlogEntry | null = await getGenerativeBlogPost(locale);
+  if (!entry && locale !== "en-us") {
+    entry = await getGenerativeBlogPost("en-us");
+  }
 
-  if (!res.ok) {
+  if (!entry) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
         <p className="text-center py-10 text-red-500 text-xl">
@@ -39,8 +39,6 @@ export default async function GenerativeBlogPost({
       </div>
     );
   }
-
-  const entry: BlogEntry = await res.json();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">

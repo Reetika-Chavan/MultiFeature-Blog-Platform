@@ -26,7 +26,7 @@ export default async function handler(request, env) {
   console.log("Geolocation:", { country, region, city });
 
   // Password protection for specific domains
-  if (hostname.includes("blog-preview.devcontentstackapps.com")) {
+  if (hostname.includes("preview-blog.devcontentstackapps.com")) {
     const validUsername = env?.PREVIEW_USERNAME;
     const validPassword = env?.PREVIEW_PASSWORD;
 
@@ -107,12 +107,9 @@ export default async function handler(request, env) {
   // Default fetch
   const response = await fetch(request);
 
-  // Set cache headers for generative AI route
+  // Set cache headers for generative AI page route
   const headers = new Headers(response.headers);
-  if (
-    pathname === "/blog/generativeai" ||
-    pathname === "/api/generative-blog"
-  ) {
+  if (pathname === "/blog/generativeai") {
     headers.set("Cache-Control", "public, s-maxage=40");
   }
 
