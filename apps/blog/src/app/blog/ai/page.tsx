@@ -1,5 +1,4 @@
 import { getAIBlogPost } from "@/app/lib/contentstack";
-import { detectLocale } from "@/app/lib/detectLocale";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
 
@@ -21,8 +20,7 @@ export default async function AIBlogPage({
   searchParams: Promise<{ lang?: string }>;
 }) {
   const { lang } = await searchParams;
-
-  const locale = lang || (await detectLocale());
+  const locale = lang || "en-us";
   let entry: BlogEntry | null = await getAIBlogPost(locale);
 
   if (!entry && locale !== "en-us") {
@@ -30,7 +28,11 @@ export default async function AIBlogPage({
   }
 
   if (!entry) {
-    return <p className="text-center py-10 text-red-500">Failed to load AI blog post.</p>;
+    return (
+      <p className="text-center py-10 text-red-500">
+        Failed to load AI blog post.
+      </p>
+    );
   }
 
   return (

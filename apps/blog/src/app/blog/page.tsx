@@ -1,5 +1,4 @@
 import { getAllBlogPosts } from "@/app/lib/contentstack";
-import { detectLocale } from "@/app/lib/detectLocale";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,7 +26,7 @@ interface BlogPageProps {
 const POSTS_PER_PAGE = 5;
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
-  const locale = await detectLocale();
+  const locale = "en-us";
   const resolvedSearchParams = await searchParams;
   const currentPage = parseInt(resolvedSearchParams.page || "1", 10);
   const allPosts: BlogEntry[] = await getAllBlogPosts(locale);

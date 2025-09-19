@@ -6,6 +6,7 @@ export default async function handler(request, env) {
   const url = new URL(request.url);
   const pathname = url.pathname;
   const hostname = url.hostname;
+  const searchParams = url.searchParams;
 
   // IP Restriction
   const clientIP =
@@ -18,6 +19,49 @@ export default async function handler(request, env) {
   const country = request.headers.get("visitor-ip-country");
   const region = request.headers.get("visitor-ip-region");
   const city = request.headers.get("visitor-ip-city");
+
+  // Geo-location based language detection
+  const localeMapByCountry = {
+    FR: "fr-fr",
+    JP: "ja-jp",
+    US: "en-us",
+    CA: "en-us",
+    GB: "en-us",
+    AU: "en-us",
+    DE: "en-us",
+    ES: "en-us",
+    IT: "en-us",
+  };
+
+  // Check if user already has a language preference
+  const currentLang = searchParams.get("lang");
+
+  // If user doesn't have a language preference, detect and redirect
+  if (!currentLang) {
+    // Get browser language as fallback
+    const acceptLang = request.headers.get("accept-language") || "";
+    const browserLang = acceptLang.split(",")[0].toLowerCase();
+
+    // Determine locale based on geolocation first
+    let detectedLocale = "en-us"; // Default fallback
+
+    if (country && localeMapByCountry[country]) {
+      detectedLocale = localeMapByCountry[country];
+    } else if (browserLang) {
+      // Fallback to browser language if no country match
+      if (browserLang.startsWith("fr")) detectedLocale = "fr-fr";
+      else if (browserLang.startsWith("ja")) detectedLocale = "ja-jp";
+      else if (browserLang.startsWith("en")) detectedLocale = "en-us";
+    }
+
+    // Only redirect if we detected a different locale than default
+    if (detectedLocale !== "en-us") {
+      const redirectUrl = new URL(request.url);
+      redirectUrl.searchParams.set("lang", detectedLocale);
+
+      return Response.redirect(redirectUrl.toString(), 302);
+    }
+  }
 
   // Password protection
   if (hostname.includes("preview-blog.devcontentstackapps.com")) {

@@ -2,7 +2,6 @@ import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
 import RevalidateButton from "../../components/RevalidateButton";
 import { getGenerativeBlogPost } from "@/app/lib/contentstack";
-import { detectLocale } from "@/app/lib/detectLocale";
 
 interface BlogEntry {
   title: string;
@@ -22,7 +21,7 @@ export default async function GenerativeBlogPost({
   searchParams: Promise<{ lang?: string }>;
 }) {
   const { lang } = await searchParams;
-  const locale = lang || (await detectLocale());
+  const locale = lang || "en-us";
 
   // ✅ Fetch directly from Contentstack
   let entry: BlogEntry | null = await getGenerativeBlogPost(locale);
