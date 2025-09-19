@@ -36,7 +36,7 @@ export default async function handler(req, res, context) {
       });
     }
 
-    // Preserve query string (?w=400&fm=webp etc.)
+    
     const url = new URL(req.url, `https://${req.headers.host}`);
     const query = url.search || "";
     const finalUrl = `${baseUrl}${query}`;
@@ -69,7 +69,7 @@ export default async function handler(req, res, context) {
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         res.setHeader("Access-Control-Allow-Origin", "*");
 
-        // Stream back to client
+       
         proxyRes.pipe(res);
       })
       .on("error", (err) => {

@@ -23,7 +23,6 @@ export default async function GenerativeBlogPost({
   const { lang } = await searchParams;
   const locale = lang || "en-us";
 
-  // ✅ Fetch directly from Contentstack
   let entry: BlogEntry | null = await getGenerativeBlogPost(locale);
   if (!entry && locale !== "en-us") {
     entry = await getGenerativeBlogPost("en-us");
@@ -42,7 +41,6 @@ export default async function GenerativeBlogPost({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <div className="max-w-4xl mx-auto px-6 py-10">
-        {/* Header with Language Switcher and Cache Revalidation */}
         <header className="mb-8 flex justify-between items-center">
           <LanguageSwitcher />
           <div className="flex flex-col items-end gap-2">
@@ -67,7 +65,6 @@ export default async function GenerativeBlogPost({
           </div>
         )}
 
-        {/* Article Header */}
         <article className="mb-8">
           <h1 className="text-4xl font-bold mb-4">{entry.title}</h1>
           <div className="flex flex-col gap-2">
@@ -90,7 +87,6 @@ export default async function GenerativeBlogPost({
           </div>
         </article>
 
-        {/* Article Content */}
         <div
           className="prose prose-lg prose-invert max-w-none"
           dangerouslySetInnerHTML={{ __html: entry.content }}

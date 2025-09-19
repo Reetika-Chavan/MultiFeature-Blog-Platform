@@ -29,7 +29,6 @@ export default function NeuralinkPage() {
         </ul>
       </section>
 
-      {/* Footer / CTA */}
       <section className="text-center mb-16">
         <a
           href="/blog"

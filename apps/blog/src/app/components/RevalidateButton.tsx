@@ -11,11 +11,9 @@ export default function RevalidateButton() {
         }
       );
 
-      // Refresh the page to show updated content
       window.location.reload();
     } catch (error) {
       console.error("Revalidation failed:", error);
-      // Still refresh the page
       window.location.reload();
     }
   };
