@@ -3,7 +3,6 @@ import { detectLocale } from "@/app/lib/detectLocale";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
 import RevalidateButton from "../../components/RevalidateButton";
-import { headers } from "next/headers";
 
 interface BlogEntry {
   title: string;
@@ -17,20 +16,15 @@ interface BlogEntry {
   };
 }
 
+// ✅ Tell Next.js/Launch to cache this page for 40s
+export const revalidate = 40;
+
 export default async function GenerativeBlogPost({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>;
+  searchParams?: { lang?: string };
 }) {
-  // Set cache headers for 40-second CDN caching
-  const headersList = await headers();
-  headersList.set(
-    "Cache-Control",
-    "public, max-age=0, s-maxage=40, stale-while-revalidate"
-  );
-
-  const { lang } = await searchParams;
-  const locale = lang || (await detectLocale());
+  const locale = searchParams?.lang || (await detectLocale());
 
   // Fetch blog content
   let entry: BlogEntry | null = await getGenerativeBlogPost(locale);
