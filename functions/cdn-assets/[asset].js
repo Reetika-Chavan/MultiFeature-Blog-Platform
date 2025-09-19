@@ -2,16 +2,8 @@ import https from "https";
 
 export default async function handler(req, res, context) {
   try {
-    console.log("Asset proxy called with URL:", req.url);
-    console.log("Request method:", req.method);
-
-    // Extract asset name from URL path - works reliably across different runtimes
-    const requestUrl = new URL(req.url, `https://${req.headers.host}`);
-    const pathParts = requestUrl.pathname.split("/");
-    const assetName = pathParts[pathParts.length - 1]; // Get the last part of the path
-
-    console.log("Extracted assetName:", assetName);
-    console.log("Full pathname:", requestUrl.pathname);
+    // Use the path segment parameter as per Contentstack Launch documentation
+    const assetName = req.params.asset;
 
     if (!assetName || assetName === "cdn-assets") {
       console.log("No asset name provided or invalid path");
