@@ -1,5 +1,3 @@
-import { getGenerativeBlogPost } from "@/app/lib/contentstack";
-import { detectLocale } from "@/app/lib/detectLocale";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
 import RevalidateButton from "../../components/RevalidateButton";
@@ -16,23 +14,23 @@ interface BlogEntry {
   };
 }
 
-// ✅ Tell Next.js/Launch to cache this page for 40s
-export const revalidate = 40;
-
 export default async function GenerativeBlogPost({
   searchParams,
 }: {
   searchParams?: { lang?: string };
 }) {
-  const locale = searchParams?.lang || (await detectLocale());
+  const lang = searchParams?.lang || "";
 
-  // Fetch blog content
-  let entry: BlogEntry | null = await getGenerativeBlogPost(locale);
-  if (!entry && locale !== "en-us") {
-    entry = await getGenerativeBlogPost("en-us");
-  }
+  // ✅ Fetch from API that sets cache headers
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SITE_URL}/api/generative-blog?lang=${lang}`,
+    {
+      // ensure Next respects caching too
+      next: { revalidate: 40 },
+    }
+  );
 
-  if (!entry) {
+  if (!res.ok) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
         <p className="text-center py-10 text-red-500 text-xl">
@@ -41,6 +39,8 @@ export default async function GenerativeBlogPost({
       </div>
     );
   }
+
+  const entry: BlogEntry = await res.json();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
