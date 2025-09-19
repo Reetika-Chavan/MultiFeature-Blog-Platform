@@ -7,7 +7,7 @@ export default async function handler(request, env) {
   const pathname = url.pathname;
   const hostname = url.hostname;
 
-  // IP Restriction Logic
+  // IP Restriction
   const clientIP =
     request.headers.get("CF-Connecting-IP") ||
     request.headers.get("X-Forwarded-For") ||
@@ -19,12 +19,8 @@ export default async function handler(request, env) {
   const region = request.headers.get("visitor-ip-region");
   const city = request.headers.get("visitor-ip-city");
 
-  console.log("Geolocation:", { country, region, city });
-  console.log("Checking hostname for password protection:", hostname);
-
-  // Password protection for specific domains
+  // Password protection
   if (hostname.includes("preview-blog.devcontentstackapps.com")) {
-    // Check for Basic Authentication
     const authHeader = request.headers.get("Authorization");
 
     if (!authHeader || !authHeader.startsWith("Basic ")) {
@@ -42,22 +38,10 @@ export default async function handler(request, env) {
     const credentials = atob(base64Credentials);
     const [username, password] = credentials.split(":");
 
-    // Hardcoded credentials for testing
     const validUsername = "admin";
     const validPassword = "supra";
 
-    console.log("Hardcoded credentials test:", {
-      username: username,
-      password: password,
-      usernameMatch: username === validUsername,
-      passwordMatch: password === validPassword,
-      usernameLength: username?.length,
-      passwordLength: password?.length,
-    });
-
     if (username === validUsername && password === validPassword) {
-      console.log("Authentication successful - continuing with request");
-      // Authentication successful - continue with request
     } else {
       return new Response("Authentication Required", {
         status: 401,
@@ -74,7 +58,6 @@ export default async function handler(request, env) {
     const allowedIPs = ["27.107.90.206"];
 
     if (!allowedIPs.includes(clientIP)) {
-      console.log("Blocked IP:", clientIP, "from accessing author-tools");
       return new Response("Access Denied: Author Tools - IP not allowed", {
         status: 403,
         headers: { "Content-Type": "text/plain" },
@@ -93,20 +76,7 @@ export default async function handler(request, env) {
   );
   if (rewriteResponse) return rewriteResponse;
 
-  // Default fetch
   const response = await fetch(request);
 
-  // Set cache headers for generative AI page route
-  const headers = new Headers(response.headers);
-  if (pathname === "/blog/generativeai") {
-    headers.set("Cache-Control", "public, s-maxage=40");
-  }
-
-  const modifiedResponse = new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: headers,
-  });
-
-  return modifiedResponse;
+  return response;
 }

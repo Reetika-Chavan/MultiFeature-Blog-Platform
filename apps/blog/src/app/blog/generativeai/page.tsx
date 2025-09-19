@@ -3,6 +3,7 @@ import Image from "next/image";
 import RevalidateButton from "../../components/RevalidateButton";
 import { getGenerativeBlogPost } from "@/app/lib/contentstack";
 import { detectLocale } from "@/app/lib/detectLocale";
+import { headers } from "next/headers";
 
 interface BlogEntry {
   title: string;
@@ -21,6 +22,13 @@ export default async function GenerativeBlogPost({
 }: {
   searchParams: Promise<{ lang?: string }>;
 }) {
+  // Set cache headers according to Contentstack Launch best practices
+  const headersList = await headers();
+  headersList.set(
+    "Cache-Control",
+    "public, max-age=0, s-maxage=40, stale-while-revalidate=60"
+  );
+
   const { lang } = await searchParams;
   const locale = lang || (await detectLocale());
 

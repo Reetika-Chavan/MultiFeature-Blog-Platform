@@ -6,7 +6,6 @@ export default async function handler(req, res, context) {
     console.log("Request URL:", req.url);
     console.log("Request params:", req.params);
 
-    // Use the path segment parameter as per Contentstack Launch documentation
     const assetName = req.params.asset;
     console.log("Asset name from params:", assetName);
 
@@ -15,10 +14,8 @@ export default async function handler(req, res, context) {
       return res.status(400).json({ error: "Bad Request: Missing asset name" });
     }
 
-    // Map cdn-assets → Contentstack Delivery URLs
+    // Map cdn-assets 
     const assetMap = {
-      "blog-cover.png":
-        "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
       "blog.png":
         "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
     };
