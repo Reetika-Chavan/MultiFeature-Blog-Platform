@@ -14,33 +14,44 @@ export default async function handler(request, env) {
     request.headers.get("X-Real-IP") ||
     "unknown";
 
-  console.log("Client IP:", clientIP);
-  console.log("Requested pathname:", pathname);
-  console.log("Hostname:", hostname);
-
   // Geolocation headers
   const country = request.headers.get("visitor-ip-country");
   const region = request.headers.get("visitor-ip-region");
   const city = request.headers.get("visitor-ip-city");
 
   console.log("Geolocation:", { country, region, city });
+  console.log("Checking hostname for password protection:", hostname);
 
-  // Password protection for specific domains
+  // Password protection 
   if (hostname.includes("preview-blog.devcontentstackapps.com")) {
+    console.log("Preview domain detected - checking authentication");
+
     const validUsername = env?.PREVIEW_USERNAME;
     const validPassword = env?.PREVIEW_PASSWORD;
 
+    console.log("Environment variables:", {
+      hasUsername: !!validUsername,
+      hasPassword: !!validPassword,
+    });
+
     const authHeader = request.headers.get("authorization");
+    console.log("Auth header present:", !!authHeader);
 
     if (authHeader && authHeader.startsWith("Basic ")) {
       try {
         const credentials = atob(authHeader.slice(6));
         const [username, password] = credentials.split(":");
 
+        console.log("Credentials:", {
+          username,
+          passwordMatch: password === validPassword,
+        });
+
         if (username === validUsername && password === validPassword) {
-          // Authentication successful - continue with the request
+          console.log("Authentication successful - continuing with request");
+          // Authentication successful
         } else {
-          // Invalid credentials - return 401
+          console.log("Invalid credentials");
           return new Response("Authentication Required", {
             status: 401,
             headers: {
@@ -53,7 +64,7 @@ export default async function handler(request, env) {
           });
         }
       } catch (error) {
-        // Error parsing credentials - return 401
+        console.log("Error parsing credentials:", error);
         return new Response("Authentication Required", {
           status: 401,
           headers: {
@@ -66,7 +77,7 @@ export default async function handler(request, env) {
         });
       }
     } else {
-      // No valid auth header - return 401
+      console.log("No valid auth header - returning 401");
       return new Response("Authentication Required", {
         status: 401,
         headers: {
@@ -78,9 +89,11 @@ export default async function handler(request, env) {
         },
       });
     }
+  } else {
+    console.log("Not a preview domain - skipping password protection");
   }
 
-  // IP restriction only for author-tools
+  // IP restriction 
   if (pathname.startsWith("/author-tools")) {
     const allowedIPs = ["27.107.90.206"];
 
