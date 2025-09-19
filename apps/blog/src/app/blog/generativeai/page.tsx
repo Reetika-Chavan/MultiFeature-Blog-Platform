@@ -1,9 +1,6 @@
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
 import RevalidateButton from "../../components/RevalidateButton";
-import { getGenerativeBlogPost } from "@/app/lib/contentstack";
-import { detectLocale } from "@/app/lib/detectLocale";
-import { headers } from "next/headers";
 
 interface BlogEntry {
   title: string;
@@ -22,23 +19,17 @@ export default async function GenerativeBlogPost({
 }: {
   searchParams: Promise<{ lang?: string }>;
 }) {
-  // Set cache headers according to Contentstack Launch best practices
-  const headersList = await headers();
-  headersList.set(
-    "Cache-Control",
-    "public, max-age=0, s-maxage=40, stale-while-revalidate=60"
+  const { lang } = await searchParams;
+
+  // ✅ Fetch from API route with proper cache headers
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SITE_URL}/api/generative-blog?lang=${lang}`,
+    {
+      cache: "no-store", // Always fetch fresh data
+    }
   );
 
-  const { lang } = await searchParams;
-  const locale = lang || (await detectLocale());
-
-  // ✅ Fetch directly from Contentstack
-  let entry: BlogEntry | null = await getGenerativeBlogPost(locale);
-  if (!entry && locale !== "en-us") {
-    entry = await getGenerativeBlogPost("en-us");
-  }
-
-  if (!entry) {
+  if (!res.ok) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
         <p className="text-center py-10 text-red-500 text-xl">
@@ -47,6 +38,8 @@ export default async function GenerativeBlogPost({
       </div>
     );
   }
+
+  const entry: BlogEntry = await res.json();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
