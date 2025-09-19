@@ -26,10 +26,7 @@ export default async function handler(request, env) {
   console.log("Geolocation:", { country, region, city });
 
   // Password protection for specific domains
-  console.log("Checking hostname for password protection:", hostname);
   if (hostname.includes("blog-preview.devcontentstackapps.com")) {
-    console.log("Preview domain detected - checking authentication");
-
     const validUsername = env?.PREVIEW_USERNAME;
     const validPassword = env?.PREVIEW_PASSWORD;
 
@@ -41,11 +38,10 @@ export default async function handler(request, env) {
         const [username, password] = credentials.split(":");
 
         if (username === validUsername && password === validPassword) {
-          console.log("Authentication successful");
-          // Continue with the request
+          // Authentication successful - continue with the request
         } else {
-          console.log("Invalid credentials");
-          return new Response("Unauthorized", {
+          // Invalid credentials - return 401
+          return new Response("Authentication Required", {
             status: 401,
             headers: {
               "WWW-Authenticate": 'Basic realm="Preview Access"',
@@ -57,8 +53,8 @@ export default async function handler(request, env) {
           });
         }
       } catch (error) {
-        console.log("Error parsing credentials:", error);
-        return new Response("Authentication Error", {
+        // Error parsing credentials - return 401
+        return new Response("Authentication Required", {
           status: 401,
           headers: {
             "WWW-Authenticate": 'Basic realm="Preview Access"',
@@ -70,7 +66,7 @@ export default async function handler(request, env) {
         });
       }
     } else {
-      console.log("No valid auth header - returning 401");
+      // No valid auth header - return 401
       return new Response("Authentication Required", {
         status: 401,
         headers: {
@@ -82,8 +78,6 @@ export default async function handler(request, env) {
         },
       });
     }
-  } else {
-    console.log("Not a preview domain - skipping password protection");
   }
 
   // IP restriction only for author-tools
@@ -112,10 +106,20 @@ export default async function handler(request, env) {
 
   // Default fetch
   const response = await fetch(request);
+
+  // Set cache headers for generative AI route
+  const headers = new Headers(response.headers);
+  if (
+    pathname === "/blog/generativeai" ||
+    pathname === "/api/generative-blog"
+  ) {
+    headers.set("Cache-Control", "public, s-maxage=40");
+  }
+
   const modifiedResponse = new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
-    headers: response.headers,
+    headers: headers,
   });
 
   return modifiedResponse;
