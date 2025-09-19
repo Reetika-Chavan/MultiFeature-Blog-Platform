@@ -42,25 +42,17 @@ export default async function handler(request, env) {
     const credentials = atob(base64Credentials);
     const [username, password] = credentials.split(":");
 
-    const validUsername = env?.PREVIEW_USERNAME;
-    const validPassword = env?.PREVIEW_PASSWORD;
+    // Hardcoded credentials for testing
+    const validUsername = "admin";
+    const validPassword = "supra";
 
-    console.log("Environment variables:", {
-      validUsername: validUsername,
-      validPassword: validPassword,
-      hasUsername: !!validUsername,
-      hasPassword: !!validPassword,
-    });
-
-    console.log("Credentials comparison:", {
+    console.log("Hardcoded credentials test:", {
       username: username,
       password: password,
       usernameMatch: username === validUsername,
       passwordMatch: password === validPassword,
       usernameLength: username?.length,
       passwordLength: password?.length,
-      validUsernameLength: validUsername?.length,
-      validPasswordLength: validPassword?.length,
     });
 
     if (username === validUsername && password === validPassword) {

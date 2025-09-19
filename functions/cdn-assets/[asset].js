@@ -2,8 +2,13 @@ import https from "https";
 
 export default async function handler(req, res, context) {
   try {
+    console.log("CDN Assets function called");
+    console.log("Request URL:", req.url);
+    console.log("Request params:", req.params);
+
     // Use the path segment parameter as per Contentstack Launch documentation
     const assetName = req.params.asset;
+    console.log("Asset name from params:", assetName);
 
     if (!assetName || assetName === "cdn-assets") {
       console.log("No asset name provided or invalid path");
@@ -18,7 +23,12 @@ export default async function handler(req, res, context) {
         "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
     };
 
+    console.log("Asset map:", assetMap);
+    console.log("Looking for asset:", assetName);
+
     const baseUrl = assetMap[assetName];
+    console.log("Found base URL:", baseUrl);
+
     if (!baseUrl) {
       console.log("Asset not found in map:", assetName);
       console.log("Available assets:", Object.keys(assetMap));
