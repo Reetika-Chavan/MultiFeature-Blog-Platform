@@ -1,23 +1,37 @@
-import https from "https";
-
-export default async function handler(req, res, context) {
+export default async function handler(request, env) {
   try {
     console.log("CDN Assets function called");
-    console.log("Request URL:", req.url);
-    console.log("Request params:", req.params);
+    console.log("Request URL:", request.url);
 
-    const assetName = req.params.asset;
-    console.log("Asset name from params:", assetName);
+    const url = new URL(request.url);
+    const pathname = url.pathname;
 
-    if (!assetName || assetName === "cdn-assets") {
+    // Extract asset name from path like /functions/cdn-assets/blog.png
+    const pathParts = pathname.split("/");
+    const assetName = pathParts[pathParts.length - 1];
+
+    console.log("Asset name from path:", assetName);
+
+    if (!assetName || assetName === "cdn-assets" || assetName === "functions") {
       console.log("No asset name provided or invalid path");
-      return res.status(400).json({ error: "Bad Request: Missing asset name" });
+      return new Response(
+        JSON.stringify({ error: "Bad Request: Missing asset name" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
-    // Map cdn-assets 
+    // Map cdn-assets to Contentstack URLs
+    // This maps the public asset names to their Contentstack asset URLs
     const assetMap = {
       "blog.png":
         "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
+      "blog-cover.png":
+        "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
+      // Add more assets as needed
+      // "logo.svg": "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt[asset-uid]/logo.svg",
     };
 
     console.log("Asset map:", assetMap);
@@ -29,63 +43,96 @@ export default async function handler(req, res, context) {
     if (!baseUrl) {
       console.log("Asset not found in map:", assetName);
       console.log("Available assets:", Object.keys(assetMap));
-      return res.status(404).json({
-        error: "Asset not found",
-        requestedAsset: assetName,
-        availableAssets: Object.keys(assetMap),
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Asset not found",
+          requestedAsset: assetName,
+          availableAssets: Object.keys(assetMap),
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
-    
-    const url = new URL(req.url, `https://${req.headers.host}`);
+    // Build final URL with query parameters for Contentstack Image API
+    // Contentstack Image API supports parameters like ?width=500&height=300&format=webp
     const query = url.search || "";
     const finalUrl = `${baseUrl}${query}`;
     console.log("Proxy fetching:", finalUrl);
 
-    // Fetch from Contentstack
-    https
-      .get(finalUrl, (proxyRes) => {
-        console.log("Proxy response status:", proxyRes.statusCode);
-        console.log(
-          "Proxy response headers:",
-          JSON.stringify(proxyRes.headers, null, 2)
-        );
-
-        if (proxyRes.statusCode !== 200) {
-          console.log("Failed to fetch asset:", proxyRes.statusCode);
-          return res.status(proxyRes.statusCode).json({
-            error: "Error fetching asset",
-            statusCode: proxyRes.statusCode,
-            assetUrl: finalUrl,
-          });
-        }
-
-        // Set headers for images
-        const contentType =
-          proxyRes.headers["content-type"] || "application/octet-stream";
-        console.log("Setting content type:", contentType);
-
-        res.setHeader("Content-Type", contentType);
-        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-        res.setHeader("Access-Control-Allow-Origin", "*");
-
-       
-        proxyRes.pipe(res);
-      })
-      .on("error", (err) => {
-        console.error("Proxy error:", err);
-        res.status(500).json({
-          error: "Internal Server Error",
-          details: err.message,
-          assetUrl: finalUrl,
-        });
+    // Add default optimization parameters if none provided
+    let optimizedUrl = finalUrl;
+    if (!query) {
+      // Add default optimization parameters
+      const defaultParams = new URLSearchParams({
+        format: "webp",
+        quality: "80",
       });
+      optimizedUrl = `${baseUrl}?${defaultParams.toString()}`;
+      console.log("Using optimized URL:", optimizedUrl);
+    }
+
+    // Fetch from Contentstack using Fetch API
+    const response = await fetch(optimizedUrl);
+
+    console.log("Proxy response status:", response.status);
+    console.log(
+      "Proxy response headers:",
+      Object.fromEntries(response.headers.entries())
+    );
+
+    if (!response.ok) {
+      console.log("Failed to fetch asset:", response.status);
+      return new Response(
+        JSON.stringify({
+          error: "Error fetching asset",
+          statusCode: response.status,
+          assetUrl: optimizedUrl,
+        }),
+        {
+          status: response.status,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get the response body
+    const responseBody = await response.arrayBuffer();
+
+    // Set appropriate headers
+    const contentType =
+      response.headers.get("content-type") || "application/octet-stream";
+    console.log("Setting content type:", contentType);
+
+    const headers = new Headers({
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Access-Control-Allow-Origin": "*",
+    });
+
+    // Copy other relevant headers from the original response
+    if (response.headers.get("content-length")) {
+      headers.set("Content-Length", response.headers.get("content-length"));
+    }
+
+    return new Response(responseBody, {
+      status: response.status,
+      headers: headers,
+    });
   } catch (err) {
     console.error("Handler error:", err);
-    res.status(500).json({
-      error: "Internal Server Error",
-      details: err.message,
-      stack: err.stack,
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Internal Server Error",
+        details: err.message,
+        stack: err.stack,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }

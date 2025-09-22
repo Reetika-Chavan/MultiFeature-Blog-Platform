@@ -22,5 +22,9 @@ export const redirectsConfig = {
       destination: "/404",
       onlyOnPreview: true,
     },
+    {
+      source: "/cdn-assets/:path*",
+      destination: "/functions/cdn-assets/:path*",
+    },
   ],
 };
