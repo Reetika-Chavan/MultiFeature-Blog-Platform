@@ -10,6 +10,13 @@ const nextConfig: NextConfig = {
     ],
     unoptimized: true,
   },
+  // Enable experimental features for better caching
+  experimental: {
+    staleTimes: {
+      dynamic: 3600, // 1 hour for dynamic pages
+      static: 86400, // 24 hours for static pages
+    },
+  },
   async headers() {
     return [
       {
