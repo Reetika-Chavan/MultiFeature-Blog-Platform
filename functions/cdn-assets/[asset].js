@@ -23,15 +23,12 @@ export default async function handler(request, env) {
       );
     }
 
-    // Map cdn-assets to Contentstack URLs
-    // This maps the public asset names to their Contentstack asset URLs
     const assetMap = {
       "blog.png":
         "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
       "blog-cover.png":
         "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
-      // Add more assets as needed
-      // "logo.svg": "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt[asset-uid]/logo.svg",
+      
     };
 
     console.log("Asset map:", assetMap);
