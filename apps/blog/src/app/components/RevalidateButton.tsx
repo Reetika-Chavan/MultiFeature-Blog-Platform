@@ -3,17 +3,31 @@
 export default function RevalidateButton() {
   const handleRevalidate = async () => {
     try {
-      await fetch(
-        "https://dev11-app.csnonprod.com/automations-api/run/6783367e138a4c799daff5195c70df1b",
+      // Call our revalidation API route
+      const response = await fetch(
+        "/api/revalidate?tag=generative-blog-post&path=/blog/generativeai",
         {
           method: "POST",
-          mode: "no-cors", 
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
       );
 
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Revalidation successful:", result);
+        // Show success message
+        alert("Cache revalidated successfully!");
+      } else {
+        throw new Error("Revalidation failed");
+      }
+
+      // Reload the page to show updated content
       window.location.reload();
     } catch (error) {
       console.error("Revalidation failed:", error);
+      alert("Revalidation failed. Please try again.");
       window.location.reload();
     }
   };

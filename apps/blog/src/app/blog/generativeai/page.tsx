@@ -15,6 +15,9 @@ interface BlogEntry {
   };
 }
 
+// Enable ISR with 1 hour revalidation
+export const revalidate = 3600;
+
 export default async function GenerativeBlogPost({
   searchParams,
 }: {
@@ -23,10 +26,7 @@ export default async function GenerativeBlogPost({
   const { lang } = await searchParams;
   const locale = lang || "en-us";
 
-  let entry: BlogEntry | null = await getGenerativeBlogPost(locale);
-  if (!entry && locale !== "en-us") {
-    entry = await getGenerativeBlogPost("en-us");
-  }
+  const entry: BlogEntry | null = await getGenerativeBlogPost(locale);
 
   if (!entry) {
     return (
@@ -47,6 +47,9 @@ export default async function GenerativeBlogPost({
             <RevalidateButton />
             <p className="text-xs text-gray-400">
               Page loaded: {new Date().toLocaleTimeString()}
+            </p>
+            <p className="text-xs text-gray-400">
+              Cache: ISR enabled (1h revalidation)
             </p>
           </div>
         </header>

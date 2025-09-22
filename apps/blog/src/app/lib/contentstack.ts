@@ -1,5 +1,6 @@
 import * as contentstack from "contentstack";
 import ContentstackLivePreview from "@contentstack/live-preview-utils";
+import { unstable_cache } from "next/cache";
 
 export const Stack = contentstack.Stack({
   api_key: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY!,
@@ -49,16 +50,28 @@ export async function getLatestBlogPost(locale = "en-us") {
   }
 }
 
-export async function getGenerativeBlogPost(locale = "en-us") {
-  try {
-    const Query = Stack.ContentType("blogpost").Query();
-    Query.where("url", "/blog/generativeai").language(locale);
-    const response = await Query.toJSON().find();
-    return response?.[0]?.[0] || null;
-  } catch (error) {
-    console.error("Contentstack AI fetch error:", error);
-    return null;
+// Cached version of getGenerativeBlogPost
+const getCachedGenerativeBlogPost = unstable_cache(
+  async (locale: string) => {
+    try {
+      const Query = Stack.ContentType("blogpost").Query();
+      Query.where("url", "/blog/generativeai").language(locale);
+      const response = await Query.toJSON().find();
+      return response?.[0]?.[0] || null;
+    } catch (error) {
+      console.error("Contentstack AI fetch error:", error);
+      return null;
+    }
+  },
+  ["generative-blog-post"],
+  {
+    revalidate: 3600, // 1 hour
+    tags: ["generative-blog-post"],
   }
+);
+
+export async function getGenerativeBlogPost(locale = "en-us") {
+  return getCachedGenerativeBlogPost(locale);
 }
 
 export async function getAllBlogPosts(locale = "en-us") {
