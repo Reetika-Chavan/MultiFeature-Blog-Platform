@@ -106,26 +106,6 @@ export default async function handler(request, env) {
   const redirectResponse = processRedirects(redirectsConfig.redirects, request);
   if (redirectResponse) return redirectResponse;
 
-  // Handle CDN assets routing
-  if (pathname.startsWith("/cdn-assets/")) {
-    const assetPath = pathname.replace("/cdn-assets/", "");
-    const cdnAssetsUrl = new URL(
-      `/functions/cdn-assets/${assetPath}`,
-      url.origin
-    );
-    cdnAssetsUrl.search = url.search;
-
-    console.log("Routing to CDN assets function:", cdnAssetsUrl.toString());
-
-    const cdnRequest = new Request(cdnAssetsUrl.toString(), {
-      method: request.method,
-      headers: request.headers,
-      body: request.body,
-    });
-
-    return fetch(cdnRequest);
-  }
-
   // Rewrites
   const rewriteResponse = await processRewrites(
     redirectsConfig.rewrites,
