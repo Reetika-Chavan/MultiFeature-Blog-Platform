@@ -26,7 +26,6 @@ ContentstackLivePreview.init({
   },
 });
 
-// Cached version of getAIBlogPost (Gemini page - longer cache)
 const getCachedAIBlogPost = unstable_cache(
   async (locale: string) => {
     try {
@@ -46,7 +45,6 @@ const getCachedAIBlogPost = unstable_cache(
   }
 );
 
-// Cached version of getLatestBlogPost (Latest page - shorter cache)
 const getCachedLatestBlogPost = unstable_cache(
   async (locale: string) => {
     try {
@@ -74,7 +72,6 @@ export async function getLatestBlogPost(locale = "en-us") {
   return getCachedLatestBlogPost(locale);
 }
 
-// Cached version of getGenerativeBlogPost
 const getCachedGenerativeBlogPost = unstable_cache(
   async (locale: string) => {
     try {
@@ -96,6 +93,18 @@ const getCachedGenerativeBlogPost = unstable_cache(
 
 export async function getGenerativeBlogPost(locale = "en-us") {
   return getCachedGenerativeBlogPost(locale);
+}
+
+export async function getTestingAIBlogPost(locale = "en-us") {
+  try {
+    const Query = Stack.ContentType("blogpost").Query();
+    Query.where("url", "/blog/testingai").language(locale);
+    const response = await Query.toJSON().find();
+    return response?.[0]?.[0] || null;
+  } catch (error) {
+    console.error("Contentstack testing AI fetch error:", error);
+    return null;
+  }
 }
 
 export async function getAllBlogPosts(locale = "en-us") {

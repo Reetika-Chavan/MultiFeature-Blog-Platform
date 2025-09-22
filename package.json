@@ -7,7 +7,9 @@
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "generate:launch": "ts-node --project tsconfig.scripts.json scripts/generateLaunchJson.ts",
+    "prebuild": "npm run generate:launch"
   },
   "workspaces": [
     "apps/*",
@@ -15,8 +17,10 @@
     "functions/*"
   ],
   "devDependencies": {
+    "dotenv": "^16.6.1",
     "eslint": "latest",
     "prettier": "latest",
+    "ts-node": "^10.9.2",
     "turbo": "latest",
     "typescript": "latest"
   },
