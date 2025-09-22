@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       console.log(`Revalidated path: ${path}`);
     }
 
-    // Also trigger the Launch automation
+    // Also trigger the Launch automation for content updates
     try {
       await fetch(
         "https://dev11-app.csnonprod.com/automations-api/run/6783367e138a4c799daff5195c70df1b",

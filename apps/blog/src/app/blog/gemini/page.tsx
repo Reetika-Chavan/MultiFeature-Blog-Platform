@@ -14,6 +14,8 @@ interface BlogEntry {
   };
 }
 
+export const revalidate = 50;
+
 export default async function AIBlogPage({
   searchParams,
 }: {
@@ -38,10 +40,14 @@ export default async function AIBlogPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <div className="max-w-4xl mx-auto px-6 py-10">
-        {/* Language Switcher */}
-        <div className="mb-4">
+        <header className="mb-8 flex justify-between items-center">
           <LanguageSwitcher />
-        </div>
+          <div className="flex flex-col items-end gap-2">
+            <p className="text-xs text-gray-400">
+              Page loaded: {new Date().toLocaleTimeString()}
+            </p>
+          </div>
+        </header>
 
         {entry.banner_image?.url && (
           <Image

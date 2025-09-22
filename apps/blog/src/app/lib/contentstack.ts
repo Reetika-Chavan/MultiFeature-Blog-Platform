@@ -26,28 +26,52 @@ ContentstackLivePreview.init({
   },
 });
 
-export async function getAIBlogPost(locale = "en-us") {
-  try {
-    const Query = Stack.ContentType("blogpost").Query();
-    Query.where("url", "/blog/ai").language(locale);
-    const response = await Query.toJSON().find();
-    return response?.[0]?.[0] || null;
-  } catch (error) {
-    console.error("Contentstack AI fetch error:", error);
-    return null;
+// Cached version of getAIBlogPost (Gemini page - longer cache)
+const getCachedAIBlogPost = unstable_cache(
+  async (locale: string) => {
+    try {
+      const Query = Stack.ContentType("blogpost").Query();
+      Query.where("url", "/blog/ai").language(locale);
+      const response = await Query.toJSON().find();
+      return response?.[0]?.[0] || null;
+    } catch (error) {
+      console.error("Contentstack AI fetch error:", error);
+      return null;
+    }
+  },
+  ["ai-blog-post"],
+  {
+    revalidate: 50,
+    tags: ["ai-blog-post"],
   }
+);
+
+// Cached version of getLatestBlogPost (Latest page - shorter cache)
+const getCachedLatestBlogPost = unstable_cache(
+  async (locale: string) => {
+    try {
+      const Query = Stack.ContentType("blogpost").Query();
+      Query.where("url", "/blog/latest").language(locale);
+      const response = await Query.toJSON().find();
+      return response?.[0]?.[0] || null;
+    } catch (error) {
+      console.error("Contentstack latest blog fetch error:", error);
+      return null;
+    }
+  },
+  ["latest-blog-post"],
+  {
+    revalidate: 40,
+    tags: ["latest-blog-post"],
+  }
+);
+
+export async function getAIBlogPost(locale = "en-us") {
+  return getCachedAIBlogPost(locale);
 }
 
 export async function getLatestBlogPost(locale = "en-us") {
-  try {
-    const Query = Stack.ContentType("blogpost").Query();
-    Query.where("url", "/blog/latest").language(locale);
-    const response = await Query.toJSON().find();
-    return response?.[0]?.[0] || null;
-  } catch (error) {
-    console.error("Contentstack latest blog fetch error:", error);
-    return null;
-  }
+  return getCachedLatestBlogPost(locale);
 }
 
 // Cached version of getGenerativeBlogPost

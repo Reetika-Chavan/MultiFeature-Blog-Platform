@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Generative AI content - balanced caching (1 hour)
         source: "/blog/generativeai",
         headers: [
           {
@@ -29,23 +30,35 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-
       {
+        // Latest content - frequent updates (40 seconds)
         source: "/blog/latest",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=0, s-maxage=40, stale-while-revalidate=20",
+            value: "public, max-age=40, s-maxage=40, stale-while-revalidate=80",
           },
         ],
       },
-
       {
+        // AI/Gemini content - moderate cache (50 seconds)
         source: "/blog/gemini",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=0, s-maxage=60, stale-while-revalidate=30",
+            value:
+              "public, max-age=50, s-maxage=50, stale-while-revalidate=100",
+          },
+        ],
+      },
+      {
+        // AI content - moderate cache (50 seconds)
+        source: "/blog/ai",
+        headers: [
+          {
+            key: "Cache-Control",
+            value:
+              "public, max-age=50, s-maxage=50, stale-while-revalidate=100",
           },
         ],
       },
