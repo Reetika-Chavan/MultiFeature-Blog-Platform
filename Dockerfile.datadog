@@ -1,0 +1,7 @@
+FROM otel/opentelemetry-collector-contrib:latest
+
+COPY otelcol-datadog-config.yaml /etc/otelcol-contrib/otelcol-contrib.yaml
+
+EXPOSE 4317 4318
+
+CMD ["--config=/etc/otelcol-contrib/otelcol-contrib.yaml"]

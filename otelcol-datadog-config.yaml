@@ -1,0 +1,31 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  datadog:
+    api:
+      key: ${DD_API_KEY}
+      site: datadoghq.com
+
+processors:
+  batch:
+  resource:
+    attributes:
+      - key: service.name
+        value: "contentstack-launch-blog"
+        action: upsert
+      - key: service.version
+        value: "1.0.0"
+        action: upsert
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [datadog]

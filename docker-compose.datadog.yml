@@ -1,0 +1,14 @@
+services:
+  otel-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.datadog
+    ports:
+      - "4317:4317" # gRPC port
+      - "4318:4318" # HTTP port
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+    volumes:
+      - ./otelcol-datadog-config.yaml:/etc/otelcol-contrib/otelcol-contrib.yaml:ro
+    restart: unless-stopped
