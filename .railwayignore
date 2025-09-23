@@ -1,0 +1,10 @@
+apps/
+functions/
+scripts/
+node_modules/
+.git/
+*.md
+*.json
+!railway.json
+!package.json
+!package-lock.json
