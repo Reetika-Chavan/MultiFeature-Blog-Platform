@@ -23,15 +23,24 @@ function parseJWT(token) {
 }
 
 function verifyJWT(token, secret) {
-  const parsed = parseJWT(token);
-  if (!parsed) return false;
+  try {
+    // Decode the session token
+    const sessionData = JSON.parse(atob(token));
 
-  // Check if token is expired
-  if (parsed.payload.exp && Date.now() >= parsed.payload.exp * 1000) {
+    // Check if token is expired
+    if (sessionData.exp && Date.now() >= sessionData.exp * 1000) {
+      return false;
+    }
+
+    // Check if required fields exist
+    if (!sessionData.access_token) {
+      return false;
+    }
+
+    return true;
+  } catch (e) {
     return false;
   }
-
-  return true;
 }
 
 export default async function handler(request, env) {
@@ -161,6 +170,11 @@ export default async function handler(request, env) {
     }
 
     try {
+      console.log("Exchanging authorization code for tokens...");
+      console.log("Token URL:", env.OAUTH_TOKEN_URL);
+      console.log("Client ID:", env.OAUTH_CLIENT_ID);
+      console.log("Redirect URI:", env.OAUTH_REDIRECT_URI);
+
       // Exchange authorization code for tokens
       const tokenResponse = await fetch(env.OAUTH_TOKEN_URL, {
         method: "POST",
@@ -176,33 +190,37 @@ export default async function handler(request, env) {
         }),
       });
 
+      console.log("Token response status:", tokenResponse.status);
+
       if (!tokenResponse.ok) {
-        throw new Error("Token exchange failed");
+        const errorText = await tokenResponse.text();
+        console.error("Token exchange failed:", errorText);
+        throw new Error(
+          `Token exchange failed: ${tokenResponse.status} - ${errorText}`
+        );
       }
 
       const tokenData = await tokenResponse.json();
+      console.log("Token response:", tokenData);
 
-      // Create JWT with token information
-      const jwtPayload = {
+      // Create a simple session token with expiration
+      const sessionData = {
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
         exp: Math.floor(Date.now() / 1000) + (tokenData.expires_in || 3600),
       };
 
-      // Simple JWT creation (in production, use a proper JWT library)
-      const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-      const payload = btoa(JSON.stringify(jwtPayload));
-      const signature = btoa(header + "." + payload + env.OAUTH_CLIENT_SECRET);
-      const jwt = header + "." + payload + "." + signature;
+      // Encode session data (simple base64 encoding for edge function)
+      const sessionToken = btoa(JSON.stringify(sessionData));
 
-      // Set JWT cookie and redirect to home
+      // Set session cookie and redirect to home
       const response = Response.redirect(
         new URL("/", request.url).toString(),
         302
       );
       response.headers.set(
         "Set-Cookie",
-        `jwt=${jwt}; HttpOnly; Secure; SameSite=Strict; Max-Age=${tokenData.expires_in || 3600}`
+        `jwt=${sessionToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=${tokenData.expires_in || 3600}`
       );
 
       return response;
