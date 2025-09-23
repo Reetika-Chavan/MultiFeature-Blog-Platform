@@ -2,6 +2,38 @@ import { processRedirects } from "../apps/blog/src/app/lib/redirects.js";
 import { processRewrites } from "../apps/blog/src/app/lib/rewrites.js";
 import { redirectsConfig } from "../apps/blog/src/app/lib/config.js";
 
+// JWT utility functions
+function base64UrlDecode(str) {
+  str += new Array(5 - (str.length % 4)).join("=");
+  return atob(str.replace(/-/g, "+").replace(/_/g, "/"));
+}
+
+function parseJWT(token) {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const header = JSON.parse(base64UrlDecode(parts[0]));
+    const payload = JSON.parse(base64UrlDecode(parts[1]));
+
+    return { header, payload };
+  } catch (e) {
+    return null;
+  }
+}
+
+function verifyJWT(token, secret) {
+  const parsed = parseJWT(token);
+  if (!parsed) return false;
+
+  // Check if token is expired
+  if (parsed.payload.exp && Date.now() >= parsed.payload.exp * 1000) {
+    return false;
+  }
+
+  return true;
+}
+
 export default async function handler(request, env) {
   const url = new URL(request.url);
   const pathname = url.pathname;
@@ -95,15 +127,88 @@ export default async function handler(request, env) {
     }
   }
 
-  // IP restriction
+  // IP restriction AND OAuth SSO Authentication for /author-tools
   if (pathname.startsWith("/author-tools")) {
     const allowedIPs = ["27.107.90.206"];
 
+    // First check IP restriction
     if (!allowedIPs.includes(clientIP)) {
       return new Response("Access Denied: Author Tools - IP not allowed", {
         status: 403,
         headers: { "Content-Type": "text/plain" },
       });
+    }
+
+    // Then check OAuth SSO authentication
+    const jwt = request.headers
+      .get("Cookie")
+      ?.split(";")
+      .find((c) => c.trim().startsWith("jwt="))
+      ?.split("=")[1];
+
+    if (!jwt || !verifyJWT(jwt, env.OAUTH_CLIENT_SECRET)) {
+      // Redirect to login page if not authenticated
+      const loginUrl = new URL("/login", request.url);
+      return Response.redirect(loginUrl.toString(), 302);
+    }
+  }
+
+  // OAuth callback handler
+  if (pathname === "/oauth/callback") {
+    const code = searchParams.get("code");
+    if (!code) {
+      return new Response("Authorization code not found", { status: 400 });
+    }
+
+    try {
+      // Exchange authorization code for tokens
+      const tokenResponse = await fetch(env.OAUTH_TOKEN_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          client_id: env.OAUTH_CLIENT_ID,
+          client_secret: env.OAUTH_CLIENT_SECRET,
+          redirect_uri: env.OAUTH_REDIRECT_URI,
+          code: code,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error("Token exchange failed");
+      }
+
+      const tokenData = await tokenResponse.json();
+
+      // Create JWT with token information
+      const jwtPayload = {
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        exp: Math.floor(Date.now() / 1000) + (tokenData.expires_in || 3600),
+      };
+
+      // Simple JWT creation (in production, use a proper JWT library)
+      const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+      const payload = btoa(JSON.stringify(jwtPayload));
+      const signature = btoa(header + "." + payload + env.OAUTH_CLIENT_SECRET);
+      const jwt = header + "." + payload + "." + signature;
+
+      // Set JWT cookie and redirect to home
+      const response = Response.redirect(
+        new URL("/", request.url).toString(),
+        302
+      );
+      response.headers.set(
+        "Set-Cookie",
+        `jwt=${jwt}; HttpOnly; Secure; SameSite=Strict; Max-Age=${tokenData.expires_in || 3600}`
+      );
+
+      return response;
+    } catch (error) {
+      console.error("OAuth callback error:", error);
+      return new Response("Authentication failed", { status: 500 });
     }
   }
 
