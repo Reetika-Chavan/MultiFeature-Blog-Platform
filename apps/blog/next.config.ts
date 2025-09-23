@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   images: {
     remotePatterns: [
       {
@@ -10,17 +11,16 @@ const nextConfig: NextConfig = {
     ],
     unoptimized: true,
   },
-  // Enable experimental features for better caching
   experimental: {
     staleTimes: {
-      dynamic: 3600, // 1 hour for dynamic pages
-      static: 86400, // 24 hours for static pages
+      dynamic: 3600,
+      static: 86400,
     },
   },
   async headers() {
     return [
       {
-        // Generative AI content - balanced caching (1 hour)
+        // 1 hour
         source: "/blog/generativeai",
         headers: [
           {
@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Latest content - frequent updates (40 seconds)
+        // 40 seconds
         source: "/blog/latest",
         headers: [
           {
@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // AI/Gemini content - moderate cache (50 seconds)
+        // 50 seconds
         source: "/blog/gemini",
         headers: [
           {
@@ -52,7 +52,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // AI content - moderate cache (50 seconds)
+        // 50 seconds
         source: "/blog/ai",
         headers: [
           {

@@ -8,7 +8,7 @@ export default function RevalidateButton() {
   const handleRevalidate = async () => {
     setIsLoading(true);
     try {
-      // Call our revalidation API route
+      // Call API route
       const response = await fetch(
         "/api/revalidate?tag=generative-blog-post&path=/blog/generativeai",
         {

@@ -20,6 +20,11 @@ export default async function handler(request, env) {
   const region = request.headers.get("visitor-ip-region");
   const city = request.headers.get("visitor-ip-city");
 
+  // Log visitor location information
+  console.log(
+    `Visitor Location: Country=${country || "Unknown"}, Region=${region || "Unknown"}, City=${city || "Unknown"}, IP=${clientIP}`
+  );
+
   const localeMapByCountry = {
     FR: "fr-fr",
     JP: "ja-jp",
