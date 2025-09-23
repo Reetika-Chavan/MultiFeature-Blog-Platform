@@ -14,6 +14,8 @@ interface BlogEntry {
   };
 }
 
+export const revalidate = 50;
+
 export default async function TestingAIBlogPost({
   searchParams,
 }: {
