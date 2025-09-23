@@ -2,6 +2,7 @@ import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
 import RevalidateButton from "../../components/RevalidateButton";
 import { getGenerativeBlogPost } from "@/app/lib/contentstack";
+import { headers } from "next/headers";
 
 interface BlogEntry {
   title: string;
@@ -24,7 +25,20 @@ export default async function GenerativeBlogPost({
   searchParams: Promise<{ lang?: string }>;
 }) {
   const { lang } = await searchParams;
-  const locale = lang || "en-us";
+
+  // Get browser's Accept-Language header
+  const headersList = await headers();
+  const acceptLanguage = headersList.get("accept-language") || "";
+
+  // Determine locale: URL parameter takes priority, then browser header, then default
+  let locale = "en-us"; // Default
+  if (lang) {
+    locale = lang; // URL parameter has highest priority
+  } else if (acceptLanguage.includes("ja")) {
+    locale = "ja-jp"; // Browser header detection
+  } else if (acceptLanguage.includes("fr")) {
+    locale = "fr-fr";
+  }
 
   const entry: BlogEntry | null = await getGenerativeBlogPost(locale);
 

@@ -1,6 +1,7 @@
 import { getLatestBlogPost } from "@/app/lib/contentstack";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
+import { headers } from "next/headers";
 
 interface BlogEntry {
   title: string;
@@ -16,9 +17,31 @@ interface BlogEntry {
 
 export const revalidate = 40;
 
-export default async function LatestBlogPage() {
-  const locale = "en-us";
-  const entry: BlogEntry | null = await getLatestBlogPost(locale);
+export default async function LatestBlogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>;
+}) {
+  const { lang } = await searchParams;
+
+  // Get browser's Accept-Language header
+  const headersList = await headers();
+  const acceptLanguage = headersList.get("accept-language") || "";
+
+  // Determine locale: URL parameter takes priority, then browser header, then default
+  let locale = "en-us"; // Default
+  if (lang) {
+    locale = lang; // URL parameter has highest priority
+  } else if (acceptLanguage.includes("ja")) {
+    locale = "ja-jp"; // Browser header detection
+  } else if (acceptLanguage.includes("fr")) {
+    locale = "fr-fr";
+  }
+  let entry: BlogEntry | null = await getLatestBlogPost(locale);
+
+  if (!entry && locale !== "en-us") {
+    entry = await getLatestBlogPost("en-us");
+  }
 
   if (!entry) {
     return (
