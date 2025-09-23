@@ -16,6 +16,11 @@ interface BlogEntry {
 
 export const revalidate = 50;
 
+// Generate static params for specific languages
+export async function generateStaticParams() {
+  return [{ lang: "en-us" }, { lang: "fr-fr" }, { lang: "ja-jp" }];
+}
+
 export default async function TestingAIBlogPost({
   searchParams,
 }: {
