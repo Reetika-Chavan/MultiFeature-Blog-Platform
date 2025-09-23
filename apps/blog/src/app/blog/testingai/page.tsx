@@ -1,5 +1,4 @@
 import { getTestingAIBlogPost } from "@/app/lib/contentstack";
-import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import Image from "next/image";
 
 interface BlogEntry {
@@ -16,23 +15,9 @@ interface BlogEntry {
 
 export const revalidate = 50;
 
-// Generate static params for specific languages
-export async function generateStaticParams() {
-  return [{ lang: "en-us" }, { lang: "fr-fr" }, { lang: "ja-jp" }];
-}
-
-export default async function TestingAIBlogPost({
-  searchParams,
-}: {
-  searchParams: Promise<{ lang?: string }>;
-}) {
-  const { lang } = await searchParams;
-  const locale = lang || "en-us";
-  let entry: BlogEntry | null = await getTestingAIBlogPost(locale);
-
-  if (!entry && locale !== "en-us") {
-    entry = await getTestingAIBlogPost("en-us");
-  }
+export default async function TestingAIBlogPost() {
+  const locale = "en-us";
+  const entry: BlogEntry | null = await getTestingAIBlogPost(locale);
 
   if (!entry) {
     return (
@@ -45,11 +30,6 @@ export default async function TestingAIBlogPost({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <div className="max-w-4xl mx-auto px-6 py-10">
-        {/* Language Switcher */}
-        <div className="mb-4">
-          <LanguageSwitcher />
-        </div>
-
         {entry.banner_image?.url && (
           <Image
             src={entry.banner_image.url}
