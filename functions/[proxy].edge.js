@@ -2,7 +2,7 @@ import { processRedirects } from "../apps/blog/src/app/lib/redirects.js";
 import { processRewrites } from "../apps/blog/src/app/lib/rewrites.js";
 import { redirectsConfig } from "../apps/blog/src/app/lib/config.js";
 
-// JWT utility functions
+// JWT functions
 function base64UrlDecode(str) {
   str += new Array(5 - (str.length % 4)).join("=");
   return atob(str.replace(/-/g, "+").replace(/_/g, "/"));
@@ -24,27 +24,18 @@ function parseJWT(token) {
 
 function verifyJWT(token, secret) {
   try {
-    console.log("Verifying JWT token...");
-    // Decode the session token
     const sessionData = JSON.parse(atob(token));
-    console.log("Decoded session data:", sessionData);
 
-    // Check if token is expired
     if (sessionData.exp && Date.now() >= sessionData.exp * 1000) {
-      console.log("JWT token expired");
       return false;
     }
 
-    // Check if required fields exist
     if (!sessionData.access_token) {
-      console.log("JWT token missing access_token");
       return false;
     }
 
-    console.log("JWT token validation successful");
     return true;
   } catch (e) {
-    console.log("JWT token validation failed:", e.message);
     return false;
   }
 }
@@ -67,7 +58,6 @@ export default async function handler(request, env, context) {
   const region = request.headers.get("visitor-ip-region");
   const city = request.headers.get("visitor-ip-city");
 
-  // Log visitor location information
   console.log(
     `Visitor Location: Country=${country || "Unknown"}, Region=${region || "Unknown"}, City=${city || "Unknown"}, IP=${clientIP}`
   );
@@ -142,11 +132,11 @@ export default async function handler(request, env, context) {
     }
   }
 
-  // IP restriction AND OAuth SSO Authentication for /author-tools
+  // IP restriction
   if (pathname.startsWith("/author-tools")) {
     const allowedIPs = ["27.107.90.206"];
 
-    // First check IP restriction
+    // check IP restriction
     if (!allowedIPs.includes(clientIP)) {
       return new Response("Access Denied: Author Tools - IP not allowed", {
         status: 403,
@@ -154,33 +144,22 @@ export default async function handler(request, env, context) {
       });
     }
 
-    // Then check OAuth SSO authentication
+    // check OAuth SSO authentication
     const jwt = request.headers
       .get("Cookie")
       ?.split(";")
       .find((c) => c.trim().startsWith("jwt="))
       ?.split("=")[1];
 
-    console.log("JWT token found:", !!jwt);
-    if (jwt) {
-      console.log("JWT token length:", jwt.length);
-      console.log("JWT token preview:", jwt.substring(0, 50) + "...");
-    }
-
     const clientSecret =
       env.OAUTH_CLIENT_SECRET || "rhCKwb_WgenLU705DZ3TQeYoKQAjuKR6";
 
     const isValidJWT = jwt && verifyJWT(jwt, clientSecret);
-    console.log("JWT validation result:", isValidJWT);
 
     if (!jwt || !isValidJWT) {
-      console.log("Redirecting to login - JWT missing or invalid");
-      // Redirect to login page if not authenticated
       const loginUrl = new URL("/login", request.url);
       return Response.redirect(loginUrl.toString(), 302);
     }
-
-    console.log("JWT validation successful - allowing access to author-tools");
   }
 
   // OAuth callback handler
@@ -202,11 +181,6 @@ export default async function handler(request, env, context) {
         env.OAUTH_REDIRECT_URI ||
         "https://blog.devcontentstackapps.com/oauth/callback";
 
-      console.log("Exchanging authorization code for tokens...");
-      console.log("Token URL:", tokenUrl);
-      console.log("Client ID:", clientId);
-      console.log("Redirect URI:", redirectUri);
-
       // Exchange authorization code for tokens
       const tokenResponse = await fetch(tokenUrl, {
         method: "POST",
@@ -222,8 +196,6 @@ export default async function handler(request, env, context) {
         }),
       });
 
-      console.log("Token response status:", tokenResponse.status);
-
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text();
         console.error("Token exchange failed:", errorText);
@@ -233,24 +205,18 @@ export default async function handler(request, env, context) {
       }
 
       const tokenData = await tokenResponse.json();
-      console.log("Token response:", tokenData);
 
-      // Create a simple session token with expiration
+      // simple session token with expiration
       const sessionData = {
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
         exp: Math.floor(Date.now() / 1000) + (tokenData.expires_in || 3600),
       };
 
-      // Encode session data (simple base64 encoding for edge function)
+      // Encode session data
       const sessionToken = btoa(JSON.stringify(sessionData));
 
       const redirectUrl = new URL("/author-tools", request.url).toString();
-
-      console.log(
-        "Setting JWT cookie with session token:",
-        sessionToken.substring(0, 50) + "..."
-      );
 
       return new Response(null, {
         status: 302,

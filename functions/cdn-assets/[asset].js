@@ -14,7 +14,6 @@ export default async function handler(request, response) {
       });
     }
 
-    // Map cdn-assets to Contentstack URLs
     const assetMap = {
       "blog.png":
         "https://dev11-images.csnonprod.com/v3/assets/bltb27c897eae5ed3fb/blt940544a43af4e6be/blog.png",
@@ -38,16 +37,15 @@ export default async function handler(request, response) {
       });
     }
 
-    // Build final URL with query parameters for Contentstack Image API
+    // URL with query parameters
     const query = request.query;
     const queryString = new URLSearchParams(query).toString();
     const finalUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
     console.log("Proxy fetching:", finalUrl);
 
-    // Add default optimization parameters if none provided
+    // default optimization parameters if none provided
     let optimizedUrl = finalUrl;
     if (!queryString) {
-      // Add default optimization parameters
       const defaultParams = new URLSearchParams({
         format: "webp",
         quality: "80",
@@ -56,7 +54,6 @@ export default async function handler(request, response) {
       console.log("Using optimized URL:", optimizedUrl);
     }
 
-    // Fetch from Contentstack using Fetch API
     const fetchResponse = await fetch(optimizedUrl);
 
     console.log("Proxy response status:", fetchResponse.status);
@@ -77,17 +74,14 @@ export default async function handler(request, response) {
     // Get the response body
     const responseBody = await fetchResponse.arrayBuffer();
 
-    // Set appropriate headers
     const contentType =
       fetchResponse.headers.get("content-type") || "application/octet-stream";
     console.log("Setting content type:", contentType);
 
-    // Set headers using Node.js response object
     response.setHeader("Content-Type", contentType);
     response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
     response.setHeader("Access-Control-Allow-Origin", "*");
 
-    // Copy other relevant headers from the original response
     if (fetchResponse.headers.get("content-length")) {
       response.setHeader(
         "Content-Length",
@@ -95,7 +89,6 @@ export default async function handler(request, response) {
       );
     }
 
-    // Send the response body
     response.status(fetchResponse.status).send(Buffer.from(responseBody));
   } catch (err) {
     console.error("Handler error:", err);

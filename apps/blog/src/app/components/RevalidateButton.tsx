@@ -22,7 +22,6 @@ export default function RevalidateButton() {
       if (response.ok) {
         const result = await response.json();
         console.log("Revalidation successful:", result);
-        // Show success message
         alert("Cache revalidated successfully!");
       } else {
         const errorData = await response.json();
@@ -31,7 +30,6 @@ export default function RevalidateButton() {
         );
       }
 
-      // Reload the page to show updated content
       window.location.reload();
     } catch (error) {
       console.error("Revalidation failed:", error);

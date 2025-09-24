@@ -86,7 +86,7 @@ const getCachedGenerativeBlogPost = unstable_cache(
   },
   ["generative-blog-post"],
   {
-    revalidate: 3600, // 1 hour
+    revalidate: 3600, 
     tags: ["generative-blog-post"],
   }
 );

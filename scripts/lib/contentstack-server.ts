@@ -2,7 +2,6 @@ import contentstack from "contentstack";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-// Load environment variables from the blog's .env file
 dotenv.config({ path: path.join(process.cwd(), "apps/blog/.env") });
 
 const apiKey = process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY;

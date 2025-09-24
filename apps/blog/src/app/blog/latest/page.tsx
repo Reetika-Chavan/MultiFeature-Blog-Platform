@@ -24,16 +24,14 @@ export default async function LatestBlogPage({
 }) {
   const { lang } = await searchParams;
 
-  // Get browser's Accept-Language header
   const headersList = await headers();
   const acceptLanguage = headersList.get("accept-language") || "";
 
-  // Determine locale: URL parameter takes priority, then browser header, then default
-  let locale = "en-us"; // Default
+  let locale = "en-us"; 
   if (lang) {
-    locale = lang; // URL parameter has highest priority
+    locale = lang;
   } else if (acceptLanguage.includes("ja")) {
-    locale = "ja-jp"; // Browser header detection
+    locale = "ja-jp"; 
   } else if (acceptLanguage.includes("fr")) {
     locale = "fr-fr";
   }

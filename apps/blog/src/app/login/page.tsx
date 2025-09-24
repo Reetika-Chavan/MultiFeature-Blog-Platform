@@ -4,20 +4,18 @@ import { useEffect } from "react";
 
 export default function LoginPage() {
   useEffect(() => {
-    // Construct the OAuth authorization URL with required parameters
     const clientId = process.env.NEXT_PUBLIC_OAUTH_CLIENT_ID;
     const redirectUri = process.env.NEXT_PUBLIC_OAUTH_REDIRECT_URI;
     const baseAuthorizeUrl = process.env.NEXT_PUBLIC_OAUTH_AUTHORIZE_URL;
 
     if (clientId && redirectUri && baseAuthorizeUrl) {
-      // Build the complete authorization URL with all required parameters
       const authUrl = new URL(baseAuthorizeUrl);
       authUrl.searchParams.set("response_type", "code");
       authUrl.searchParams.set("client_id", clientId);
       authUrl.searchParams.set("redirect_uri", redirectUri);
       authUrl.searchParams.set("scope", "user.profile:read");
 
-      // Redirect to Contentstack OAuth authorization
+      // Redirect OAuth authorization
       window.location.href = authUrl.toString();
     } else {
       console.error("Missing OAuth configuration:", {
