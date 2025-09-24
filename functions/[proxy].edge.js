@@ -247,11 +247,16 @@ export default async function handler(request, env, context) {
 
       const redirectUrl = new URL("/author-tools", request.url).toString();
 
+      console.log(
+        "Setting JWT cookie with session token:",
+        sessionToken.substring(0, 50) + "..."
+      );
+
       return new Response(null, {
         status: 302,
         headers: {
           Location: redirectUrl,
-          "Set-Cookie": `jwt=${sessionToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=${tokenData.expires_in || 3600}`,
+          "Set-Cookie": `jwt=${sessionToken}; Path=/; Max-Age=${tokenData.expires_in || 3600}; SameSite=Lax`,
         },
       });
     } catch (error) {
