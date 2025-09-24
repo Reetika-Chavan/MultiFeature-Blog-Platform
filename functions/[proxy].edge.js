@@ -43,7 +43,7 @@ function verifyJWT(token, secret) {
   }
 }
 
-export default async function handler(request, env) {
+export default async function handler(request, env, context) {
   const url = new URL(request.url);
   const pathname = url.pathname;
   const hostname = url.hostname;
@@ -155,7 +155,10 @@ export default async function handler(request, env) {
       .find((c) => c.trim().startsWith("jwt="))
       ?.split("=")[1];
 
-    if (!jwt || !verifyJWT(jwt, env.OAUTH_CLIENT_SECRET)) {
+    const clientSecret =
+      env.OAUTH_CLIENT_SECRET || "rhCKwb_WgenLU705DZ3TQeYoKQAjuKR6";
+
+    if (!jwt || !verifyJWT(jwt, clientSecret)) {
       // Redirect to login page if not authenticated
       const loginUrl = new URL("/login", request.url);
       return Response.redirect(loginUrl.toString(), 302);
@@ -170,22 +173,33 @@ export default async function handler(request, env) {
     }
 
     try {
+      // Get environment variables with fallbacks
+      const tokenUrl =
+        env.OAUTH_TOKEN_URL ||
+        "https://dev11-app.csnonprod.com/apps-api/apps/token";
+      const clientId = env.OAUTH_CLIENT_ID || "VWNxorjEGDtTRCTb";
+      const clientSecret =
+        env.OAUTH_CLIENT_SECRET || "rhCKwb_WgenLU705DZ3TQeYoKQAjuKR6";
+      const redirectUri =
+        env.OAUTH_REDIRECT_URI ||
+        "https://blog.devcontentstackapps.com/oauth/callback";
+
       console.log("Exchanging authorization code for tokens...");
-      console.log("Token URL:", env.OAUTH_TOKEN_URL);
-      console.log("Client ID:", env.OAUTH_CLIENT_ID);
-      console.log("Redirect URI:", env.OAUTH_REDIRECT_URI);
+      console.log("Token URL:", tokenUrl);
+      console.log("Client ID:", clientId);
+      console.log("Redirect URI:", redirectUri);
 
       // Exchange authorization code for tokens
-      const tokenResponse = await fetch(env.OAUTH_TOKEN_URL, {
+      const tokenResponse = await fetch(tokenUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
           grant_type: "authorization_code",
-          client_id: env.OAUTH_CLIENT_ID,
-          client_secret: env.OAUTH_CLIENT_SECRET,
-          redirect_uri: env.OAUTH_REDIRECT_URI,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
           code: code,
         }),
       });
