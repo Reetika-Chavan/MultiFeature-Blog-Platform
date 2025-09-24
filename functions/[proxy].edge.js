@@ -228,16 +228,15 @@ export default async function handler(request, env, context) {
       const sessionToken = btoa(JSON.stringify(sessionData));
 
       // Set session cookie and redirect to home
-      const response = Response.redirect(
-        new URL("/", request.url).toString(),
-        302
-      );
-      response.headers.set(
-        "Set-Cookie",
-        `jwt=${sessionToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=${tokenData.expires_in || 3600}`
-      );
+      const redirectUrl = new URL("/", request.url).toString();
 
-      return response;
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: redirectUrl,
+          "Set-Cookie": `jwt=${sessionToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=${tokenData.expires_in || 3600}`,
+        },
+      });
     } catch (error) {
       console.error("OAuth callback error:", error);
       return new Response("Authentication failed", { status: 500 });
