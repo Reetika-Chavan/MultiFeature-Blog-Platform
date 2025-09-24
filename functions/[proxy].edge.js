@@ -227,8 +227,7 @@ export default async function handler(request, env, context) {
       // Encode session data (simple base64 encoding for edge function)
       const sessionToken = btoa(JSON.stringify(sessionData));
 
-      // Set session cookie and redirect to home
-      const redirectUrl = new URL("/", request.url).toString();
+      const redirectUrl = new URL("/author-tools", request.url).toString();
 
       return new Response(null, {
         status: 302,
