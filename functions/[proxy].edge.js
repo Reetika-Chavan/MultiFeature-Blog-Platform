@@ -24,21 +24,27 @@ function parseJWT(token) {
 
 function verifyJWT(token, secret) {
   try {
+    console.log("Verifying JWT token...");
     // Decode the session token
     const sessionData = JSON.parse(atob(token));
+    console.log("Decoded session data:", sessionData);
 
     // Check if token is expired
     if (sessionData.exp && Date.now() >= sessionData.exp * 1000) {
+      console.log("JWT token expired");
       return false;
     }
 
     // Check if required fields exist
     if (!sessionData.access_token) {
+      console.log("JWT token missing access_token");
       return false;
     }
 
+    console.log("JWT token validation successful");
     return true;
   } catch (e) {
+    console.log("JWT token validation failed:", e.message);
     return false;
   }
 }
@@ -155,14 +161,26 @@ export default async function handler(request, env, context) {
       .find((c) => c.trim().startsWith("jwt="))
       ?.split("=")[1];
 
+    console.log("JWT token found:", !!jwt);
+    if (jwt) {
+      console.log("JWT token length:", jwt.length);
+      console.log("JWT token preview:", jwt.substring(0, 50) + "...");
+    }
+
     const clientSecret =
       env.OAUTH_CLIENT_SECRET || "rhCKwb_WgenLU705DZ3TQeYoKQAjuKR6";
 
-    if (!jwt || !verifyJWT(jwt, clientSecret)) {
+    const isValidJWT = jwt && verifyJWT(jwt, clientSecret);
+    console.log("JWT validation result:", isValidJWT);
+
+    if (!jwt || !isValidJWT) {
+      console.log("Redirecting to login - JWT missing or invalid");
       // Redirect to login page if not authenticated
       const loginUrl = new URL("/login", request.url);
       return Response.redirect(loginUrl.toString(), 302);
     }
+
+    console.log("JWT validation successful - allowing access to author-tools");
   }
 
   // OAuth callback handler
