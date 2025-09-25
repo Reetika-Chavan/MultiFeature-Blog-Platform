@@ -1,0 +1,37 @@
+{
+  "project": {
+    "uid": "68a44953fe337c3210e4b9e5",
+    "name": "MultiFeature-Blog-Platform",
+    "projectType": "GITPROVIDER",
+    "organizationUid": "blt8ca9ce72e25d0172",
+    "environments": [
+      {
+        "uid": "68c9307a6f4e320f0abc5af2",
+        "name": "Production",
+        "frameworkPreset": "NEXTJS",
+        "__typename": "Environment"
+      }
+    ],
+    "__typename": "Project",
+    "deployments": [
+      {
+        "uid": "68d39e7355d235ababb2bd8f",
+        "status": "QUEUED",
+        "deploymentUrl": "blog.devcontentstackapps.com",
+        "commitMessage": "Triggered By launchjson",
+        "__typename": "Deployment"
+      },
+      {
+        "uid": "68d3b15934184d0c72bb418e",
+        "status": "QUEUED",
+        "commitUrl": "https://github.com/Reetika-Chavan/MultiFeature-Blog-Platform/commit/eb3ff11aba403c2d8bc4b1417347f80e3489ca36",
+        "createdAt": "2025-09-24T08:52:41.551Z",
+        "updatedAt": "2025-09-24T08:52:41.551Z",
+        "commitHash": "eb3ff11aba403c2d8bc4b1417347f80e3489ca36",
+        "commitMessage": "consol logs removed",
+        "deploymentUrl": "blog.devcontentstackapps.com",
+        "__typename": "Deployment"
+      }
+    ]
+  }
+}

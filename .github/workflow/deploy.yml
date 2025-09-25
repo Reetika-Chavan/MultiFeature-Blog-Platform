@@ -1,0 +1,64 @@
+name: Deploy to Launch
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check for .cs-launch file
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files including dotfiles:"
+          ls -la
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the project
+        run: npm run build
+
+      - name: Show latest commit ID and message
+        run: |
+          echo "Latest Commit ID:"
+          git log -1 --pretty=format:"%H"
+          echo ""
+          echo "Latest Commit Message:"
+          git log -1 --pretty=format:"%s"
+
+      - name: Install CLI tools
+        run: |
+          npm install -g @contentstack/cli
+          npm install otplib
+
+      - name: Verify Contentstack CLI Installation
+        run: csdx --version
+
+      - name: Set Launch Region
+        run: csdx  config:set:region --name dev11 --cma https://dev11-api.csnonprod.com --cda https://dev11-cdn.csnonprod.com --ui-host https://dev11-app.csnonprod.com --launch https://dev-launch-api.csnonprod.com
+
+      - name: Login to Contentstack via CSDX CLI
+        env:
+          CSDX_EMAIL: ${{ secrets.EMAIL }}
+          CSDX_PASSWORD: ${{ secrets.PASS }}
+          CSDX_TOTP_SECRET: ${{ secrets.DEVMFA }}
+        run: node csdx-login.js
+
+      - name: Verify CSDX Login
+        run: csdx auth:whoami
+
+      - name: Deploy using Launch config
+        run: csdx launch --redeploy-latest --environment Production

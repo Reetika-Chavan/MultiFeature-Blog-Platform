@@ -29,6 +29,7 @@
     "contentstack": "^3.26.2",
     "isomorphic-dompurify": "^2.26.0",
     "lucide-react": "^0.541.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "otplib": "^12.0.1"
   }
 }
