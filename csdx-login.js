@@ -14,7 +14,7 @@ async function start() {
 }
 
 start();
-
+//test
 function loginProcess() {
   return spawn("csdx", ["auth:login", "-u", email, "-p", password], {
     stdio: ["pipe", "pipe", "inherit"],
