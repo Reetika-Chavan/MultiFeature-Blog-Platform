@@ -56,9 +56,9 @@ jobs:
 
       - name: Login to Contentstack via CSDX CLI
         env:
-          CSDX_EMAIL: ${{ secrets.EMAIL }}
-          CSDX_PASSWORD: ${{ secrets.PASS }}
-          CSDX_TOTP_SECRET: ${{ secrets.DEVMFA }}
+          EMAIL: ${{ secrets.EMAIL }}
+          PASS: ${{ secrets.PASS }}
+          DEVMFA: ${{ secrets.DEVMFA }}
         run: node csdx-login.js
 
       - name: Verify CSDX Login
