@@ -66,4 +66,4 @@ jobs:
         run: csdx auth:whoami
 
       - name: Deploy using Launch config
-        run: csdx launch --redeploy-latest --environment Production
+        run: csdx launch --redeploy-latest
