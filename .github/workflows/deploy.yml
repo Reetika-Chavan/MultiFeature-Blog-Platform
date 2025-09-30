@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - dev
 
 jobs:
   deploy:
@@ -65,5 +64,8 @@ jobs:
       - name: Verify CSDX Login
         run: csdx auth:whoami
 
-      - name: Deploy using Launch config
+      - name: Deploy to Production environment
         run: csdx launch --redeploy-latest --environment Production
+
+      - name: Deploy to Default environment
+        run: csdx launch --redeploy-latest --environment Default
