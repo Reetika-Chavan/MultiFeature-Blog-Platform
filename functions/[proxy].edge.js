@@ -176,9 +176,26 @@ export default async function handler(request, env, context) {
       const clientId = env.OAUTH_CLIENT_ID || "VWNxorjEGDtTRCTb";
       const clientSecret =
         env.OAUTH_CLIENT_SECRET || "rhCKwb_WgenLU705DZ3TQeYoKQAjuKR6";
-      const redirectUri =
-        env.OAUTH_REDIRECT_URI ||
-        "https://blog.devcontentstackapps.com/oauth/callback";
+      // Determine redirect URI based on the request origin
+      const origin =
+        request.headers.get("Origin") || request.headers.get("Referer");
+      let redirectUri;
+
+      if (origin && origin.includes("preview-blog.devcontentstackapps.com")) {
+        redirectUri =
+          "https://preview-blog.devcontentstackapps.com/oauth/callback";
+      } else if (
+        origin &&
+        origin.includes("blog-test.devcontentstackapps.com")
+      ) {
+        redirectUri =
+          "https://blog-test.devcontentstackapps.com/oauth/callback";
+      } else {
+        // Default to main blog domain
+        redirectUri =
+          env.OAUTH_REDIRECT_URI ||
+          "https://blog.devcontentstackapps.com/oauth/callback";
+      }
 
       // Exchange authorization code for tokens
       const tokenResponse = await fetch(tokenUrl, {
@@ -215,7 +232,20 @@ export default async function handler(request, env, context) {
       // Encode session data
       const sessionToken = btoa(JSON.stringify(sessionData));
 
-      const redirectUrl = new URL("/author-tools", request.url).toString();
+      // Determine the correct domain for redirect based on origin
+      let baseUrl;
+      if (origin && origin.includes("preview-blog.devcontentstackapps.com")) {
+        baseUrl = "https://preview-blog.devcontentstackapps.com";
+      } else if (
+        origin &&
+        origin.includes("blog-test.devcontentstackapps.com")
+      ) {
+        baseUrl = "https://blog-test.devcontentstackapps.com";
+      } else {
+        baseUrl = "https://blog.devcontentstackapps.com";
+      }
+
+      const redirectUrl = `${baseUrl}/author-tools`;
 
       return new Response(null, {
         status: 302,
