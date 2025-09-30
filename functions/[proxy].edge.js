@@ -134,9 +134,8 @@ export default async function handler(request, env, context) {
 
   // IP restriction
   if (pathname.startsWith("/author-tools")) {
-    const allowedIPs = ["27.107.90.206"];
+    const allowedIPs = ["27.107.90.206", "27.107.175.218"];
 
-    // check IP restriction
     if (!allowedIPs.includes(clientIP)) {
       return new Response("Access Denied: Author Tools - IP not allowed", {
         status: 403,
