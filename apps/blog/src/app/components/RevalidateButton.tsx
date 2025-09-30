@@ -22,7 +22,9 @@ export default function RevalidateButton() {
       if (response.ok) {
         const result = await response.json();
         console.log("Revalidation successful:", result);
-        alert("Cache revalidated successfully!");
+        alert(
+          "Cache revalidated successfully for both Production and Default environments!"
+        );
       } else {
         const errorData = await response.json();
         throw new Error(
