@@ -31,6 +31,17 @@
         "commitMessage": "consol logs removed",
         "deploymentUrl": "blog.devcontentstackapps.com",
         "__typename": "Deployment"
+      },
+      {
+        "uid": "68dbb7c311ab86d168ef90a9",
+        "status": "QUEUED",
+        "commitUrl": "https://github.com/Reetika-Chavan/MultiFeature-Blog-Platform/commit/927f2f6a891a08571746a134ee8c11e7779bd798",
+        "createdAt": "2025-09-30T10:58:11.503Z",
+        "updatedAt": "2025-09-30T10:58:11.503Z",
+        "commitHash": "927f2f6a891a08571746a134ee8c11e7779bd798",
+        "commitMessage": "sso for 3 domains",
+        "deploymentUrl": "blog-test.devcontentstackapps.com",
+        "__typename": "Deployment"
       }
     ]
   }

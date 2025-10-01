@@ -43,7 +43,7 @@ export default async function handler(request, response) {
     const finalUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
     console.log("Proxy fetching:", finalUrl);
 
-    // default optimization parameters if none provided
+    // default optimization
     let optimizedUrl = finalUrl;
     if (!queryString) {
       const defaultParams = new URLSearchParams({

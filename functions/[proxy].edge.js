@@ -143,7 +143,7 @@ export default async function handler(request, env, context) {
       });
     }
 
-    // check OAuth SSO authentication
+    // OAuth SSO authentication
     const jwt = request.headers
       .get("Cookie")
       ?.split(";")
@@ -169,14 +169,12 @@ export default async function handler(request, env, context) {
     }
 
     try {
-      // Get environment variables with fallbacks
       const tokenUrl =
         env.OAUTH_TOKEN_URL ||
         "https://dev11-app.csnonprod.com/apps-api/apps/token";
       const clientId = env.OAUTH_CLIENT_ID || "VWNxorjEGDtTRCTb";
       const clientSecret =
         env.OAUTH_CLIENT_SECRET || "rhCKwb_WgenLU705DZ3TQeYoKQAjuKR6";
-      // Determine redirect URI based on the request origin
       const origin =
         request.headers.get("Origin") || request.headers.get("Referer");
       let redirectUri;
@@ -191,13 +189,11 @@ export default async function handler(request, env, context) {
         redirectUri =
           "https://blog-test.devcontentstackapps.com/oauth/callback";
       } else {
-        // Default to main blog domain
         redirectUri =
           env.OAUTH_REDIRECT_URI ||
           "https://blog.devcontentstackapps.com/oauth/callback";
       }
 
-      // Exchange authorization code for tokens
       const tokenResponse = await fetch(tokenUrl, {
         method: "POST",
         headers: {
@@ -222,7 +218,7 @@ export default async function handler(request, env, context) {
 
       const tokenData = await tokenResponse.json();
 
-      // simple session token with expiration
+      // session token
       const sessionData = {
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
@@ -232,7 +228,6 @@ export default async function handler(request, env, context) {
       // Encode session data
       const sessionToken = btoa(JSON.stringify(sessionData));
 
-      // Determine the correct domain for redirect based on origin
       let baseUrl;
       if (origin && origin.includes("preview-blog.devcontentstackapps.com")) {
         baseUrl = "https://preview-blog.devcontentstackapps.com";
