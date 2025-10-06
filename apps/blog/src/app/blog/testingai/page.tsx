@@ -13,8 +13,6 @@ interface BlogEntry {
   };
 }
 
-export const revalidate = 50;
-
 export default async function TestingAIBlogPost() {
   const locale = "en-us";
   const entry: BlogEntry | null = await getTestingAIBlogPost(locale);

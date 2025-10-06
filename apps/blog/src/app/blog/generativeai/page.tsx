@@ -59,9 +59,6 @@ export default async function GenerativeBlogPost({
             <p className="text-xs text-gray-400">
               Page loaded: {new Date().toLocaleTimeString()}
             </p>
-            <p className="text-xs text-gray-400">
-              Cache: ISR enabled (1h revalidation)
-            </p>
           </div>
         </header>
 
